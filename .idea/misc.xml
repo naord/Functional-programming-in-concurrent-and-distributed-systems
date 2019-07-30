@@ -3,7 +3,4 @@
   <component name="ProjectRootManager" version="2" project-jdk-name="Erlang 21" project-jdk-type="Erlang SDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
-  <component name="RebarSettings">
-    <rebarPath>C:\Program Files\Rebar\rebar</rebarPath>
-  </component>
 </project>
