@@ -1,13 +1,13 @@
 %%%-------------------------------------------------------------------
-%%% @author נאור דהן
+%%% @author Naor Dahan
 %%% @copyright (C) 2019, <COMPANY>
 %%% @doc
 %%%
 %%% @end
 %%% Created : 30. יול׳ 2019 19:18
 %%%-------------------------------------------------------------------
--module('Garden').
--author("נאור דהן").
+-module(garden).
+-author("Naor Dahan").
 
 -behaviour(gen_server).
 
