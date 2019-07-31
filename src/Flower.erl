@@ -95,5 +95,3 @@ getRandomStatus()->
     RandomStatus > 30 and RandomStatus < 10 -> fertalize
   end.
 
-tests()->
-  
