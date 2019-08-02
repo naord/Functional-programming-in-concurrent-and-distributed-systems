@@ -2,9 +2,15 @@
 
 % Global Records
 -record(flower,{id, status, pointsLifeTime}).
+-record(gardener,{id, type, state, location = {0,0}}).
 
 
-% Gloval Variables
+% Global Variables
+% Gardener variables
+-define(handle, 10).
+-define(squareSize,80).
+-define(walkTime, 10).
+-define(gardenSize, 1000).
 
 % Pests images paths
 -define(pests_purple_left_path , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/pestsPurple.jpeg").

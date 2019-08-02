@@ -11,7 +11,7 @@
 -behavior(gen_server).
 
 %% API
--export([init/1, handle_cast/6, handle_cast/3, handle_cast/2, handle_call/3]).
+-export([init/1, handle_cast/6, handle_cast/2, handle_call/3]).
 -export([start/1,newGardener/4, isArrive/4]).
 
 %%----------------------------------------------------
@@ -29,19 +29,10 @@
 %%           *location is multiple of 80
 %%----------------------------------------------------
 
+-include("globalVariables.hrl").
 
--record(gardener,{id, type, state, location = {0,0}}).
 newGardener(Id, Type, State, Location)->
   #gardener{id = Id, type = Type, state = State, location = Location}.
-
--define(handle, 10). %TODO: need to create one define file
--define(squareSize,80).
--define(walkTime, 10).
--define(gardenSize, 1000).
-%%-define(watering, 10).
-%%-define(fertilizing, 10).
-%%-define(pest_control, 10).
-%%-define(uprooting, 10).
 
 start([Id, Type]) ->
   gen_server:start({global, Id}, ?MODULE, [Id, Type], []).
@@ -49,10 +40,6 @@ start([Id, Type]) ->
 init([Id, Type]) ->
   #gardener{id = Id, type = Type},
   {ok, #gardener{}}.
-
-handle_cast(walkRandom, State, Flower) -> %%TODO implement.
-  io:fwrite("walkRandom ~n").
-  %erlang:error(not_implemented).
 
 handle_cast(walkToFlower, Action, State, Flower, {DestX,DestY}, Sender) ->
   InputCheck = abs((DestX rem 80) + (DestY rem 80)) == 0,
@@ -115,8 +102,6 @@ handleFlower(State, Action, Flower, Sender) ->
   rest(State#gardener{state = resting}, Sender).
   %randWalk(State#gardener{state = walkRandom}, Sender).
 
-
-
 calculateProgress({MyX,MyY},{DestX,DestY}) ->
   Dx = (DestX - MyX),
   Dy = (DestY - MyY),
@@ -130,6 +115,9 @@ handle_cast(handleFlower, State) ->
   io:fwrite("handleFlower ~n").
 %erlang:error(not_implemented).
 
+%%handle_cast(walkRandom, State, Flower) -> %%TODO implement.
+%%  io:fwrite("walkRandom ~n").
+%%  %erlang:error(not_implemented).
 
 %%randWalk(State,Sender) -> %TODO need to update to new walking
 %%  Xrand = getRandomPoint(),
