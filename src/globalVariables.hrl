@@ -1,56 +1,73 @@
 -author("nir").
 
 % Global Records
--record(flower,{id, status, pointsLifeTime}).
+-record(flower,{id, type, status, pointsLifeTime}).
 -record(gardener,{id, type, state, location = {0,0}}).
 
+% Constant
+-define(screen_width , 1360).
+-define(screen_height, 960).
 
 % Global Variables
 % Gardener variables
+
 -define(handle, 10).
 -define(squareSize,80).
 -define(walkTime, 10).
 -define(gardenSize, 1000).
 
-% Pests images paths
--define(pests_purple_left_path , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/pestsPurple.jpeg").
--define(pests_purple_right_path, "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/pestsPurple.jpeg").
--define(pests_green_left_path  , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/pestsGreen.jpg").
--define(pests_green_right_path , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/pestsGreen.jpg").
-
-%%% Pests images tuple
-%%-define(purple_left_tuple , {purple, left}).
-%%-define(purple_right_tuple, {purple, right}).
-%%-define(green_left_tuple  , {green, left}).
-%%-define(green_right_tuple , {green, right}).
+% Images paths
+-define(imagesPath,  "/home/nirkov/Desktop/TheNightmareGarden/TheNightmareGarden/pics").
+-define(irisPath    , ?imagesPath ++ "/iris").
+-define(redPath     , ?imagesPath ++ "/red").
+-define(lawnPath    , ?imagesPath ++ "/Lawn").
+-define(gardenerPath, ?imagesPath ++ "/gardener").
 
 % Flower images paths
--define(iris_path                 , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/iris.jpg").
--define(wilted_iris_path          , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/WiltedFlowerIris.jpg").
--define(chrysanthemum_path        , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/WiltedFlowerChrysanthemum.jpeg").
--define(wilted_chrysanthemum_path , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/WiltedFlowerChrysanthemum.jpeg").
 
-%%% Flowers images tuple
-%%-define(iris_tuple                , {flowering, iris}).
-%%-define(wilted_iris_tuple         , {wilted   , iris}).
-%%-define(chrysanthemum_tuple       , {flowering, chrysanthemum}).
-%%-define(wilted_chrysanthemum_tuple, {wilted, chrysanthemum} ).
+% iris -
+-define(iris_r, ?irisPath ++ "/irisRight.png").
+-define(iris_l, ?irisPath ++ "/irisLeft.png").
+
+-define(iris_r_wilted, ?irisPath ++ "/wilted_irisRight.png").
+-define(iris_l_wilted,  ?irisPath ++ "/wilted_irisLeft.png").
+
+-define(iris_r_pests_ant, ?irisPath ++ "/pests_irisRight_ant.png").
+-define(iris_l_pests_ant, ?irisPath ++ "/pests_irisLeft_ant.png").
+
+-define(iris_r_pests_purple, ?irisPath ++ "/pests_irisRight_purple.png").
+-define(iris_l_pests_purple, ?irisPath ++ "/pests_irisLeft_purple.png").
+
+-define(iris_r_pests_green, ?irisPath ++ "/pests_irisRight_green.png").
+-define(iris_l_pests_green, ?irisPath ++ "/pests_irisLeft_green.png").
+
+% red -
+-define(red_r, ?redPath ++ "/redRight.png").
+-define(red_l, ?redPath ++ "/redLeft.png").
+
+-define(red_r_wilted, ?redPath ++ "/wilted_redRight.png").
+-define(red_l_wilted,  ?redPath ++ "/wilted_redLeft.png").
+
+-define(red_r_pests_ant, ?redPath ++ "/pests_redRight_ant.png").
+-define(red_l_pests_ant, ?redPath ++ "/pests_redLeft_ant.png").
+
+-define(red_r_pests_purple, ?redPath ++ "/pests_redRight_purple.png").
+-define(red_l_pests_purple, ?redPath ++ "/pests_redLeft_purple.png").
+
+-define(red_r_pests_green, ?redPath ++ "/pests_redRight_green.png").
+-define(red_l_pests_green, ?redPath ++ "/pests_redLeft_green.png").
+
 
 % Background images path
--define(grass_background_path , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/grass.jpg").
--define(store_house_path      ,"/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/gardensStorehouse.jpg").
+-define(lawn_background  , ?lawnPath ++ "/Background_1360_960.png").
+-define(lawn_piece       , ?lawnPath ++ "/PieceOfLawn.png").
 
 % Gardener images path
--define(nir_gardener_left   , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/grass.jpg").
--define(nir_gardener_right  , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/grass.jpg").
--define(naor_gardener_left  , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/gardensStorehouse.jpg").
--define(naor_gardener_right , "/home/nirkov/Programs/IntelliJ/intellyJWorkSpace/flower/src/pics/gardensStorehouse.jpg").
-
-%%% Gardener images
-%%-define(nir_left   , {nir, left}).
-%%-define(nir_right  , {nir, right}).
-%%-define(naor_left  , {naor, left}).
-%%-define(naor_right , {naor, right}).
+-define(nir_left_first   , ?gardenerPath ++ "/nirLeftFirst.png").
+-define(nir_left_second  , ?gardenerPath ++ "/nirLeftSec.png").
+-define(nir_right_first  , ?gardenerPath ++ "/nirRightFirst.png").
+-define(nir_right_second , ?gardenerPath ++ "/nirRightSec.png").
+-define(nir_sit          , ?gardenerPath ++ "/nir_sit.png").
 
 
 
