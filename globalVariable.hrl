@@ -57,7 +57,6 @@
 -define(red_r_pests_green, ?redPath ++ "/pests_redRight_green.png").
 -define(red_l_pests_green, ?redPath ++ "/pests_redLeft_green.png").
 
-
 % Background images path
 -define(lawn_background  , ?lawnPath ++ "/Background_1360_960.png").
 -define(lawn_piece       , ?lawnPath ++ "/PieceOfLawn.png").
@@ -68,21 +67,3 @@
 -define(nir_right_first  , ?gardenerPath ++ "/nirRightFirst.png").
 -define(nir_right_second , ?gardenerPath ++ "/nirRightSec.png").
 -define(nir_sit          , ?gardenerPath ++ "/nir_sit.png").
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
