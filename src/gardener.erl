@@ -11,71 +11,166 @@
 -behavior(gen_server).
 
 %% API
--export([init/1, handle_cast/2]). %, handle_call/3
--export([start/1]).
+-export([init/1, handle_cast/6, handle_cast/3, handle_cast/2, handle_call/3]).
+-export([start/1,newGardener/4, isArrive/4]).
 
--record(gardener,{id, state = walkRandom, location = {0,0}}).
+%%----------------------------------------------------
+%%  Gardener states are atoms:
+%%                          walkToFlower
+%%                          handleFlower
+%%                          walkRandom
+%%                          resting
+%%  Movement: move one square at a time-
+%%            left
+%%            right
+%%            up
+%%            down
+%%            diagonally(up/down ,left/right)
+%%           *location is multiple of 80
+%%----------------------------------------------------
+
+
+-record(gardener,{id, type, state, location = {0,0}}).
+newGardener(Id, Type, State, Location)->
+  #gardener{id = Id, type = Type, state = State, location = Location}.
+
 -define(handle, 10). %TODO: need to create one define file
--define(progressSize,30).
+-define(squareSize,80).
 -define(walkTime, 10).
+-define(gardenSize, 1000).
 %%-define(watering, 10).
 %%-define(fertilizing, 10).
 %%-define(pest_control, 10).
 %%-define(uprooting, 10).
 
-start(Id) ->
-  gen_server:start({global, Id}, ?MODULE, Id, []).
+start([Id, Type]) ->
+  gen_server:start({global, Id}, ?MODULE, [Id, Type], []).
 
-init(Args) ->
-  #gardener{id = Args},
+init([Id, Type]) ->
+  #gardener{id = Id, type = Type},
   {ok, #gardener{}}.
 
 handle_cast(walkRandom, State, Flower) -> %%TODO implement.
-  erlang:error(not_implemented).
+  io:fwrite("walkRandom ~n").
+  %erlang:error(not_implemented).
 
 handle_cast(walkToFlower, Action, State, Flower, {DestX,DestY}, Sender) ->
-  Location = State#gardener.location,
-  {AddX,AddY} = calculateProgress(Location, {DestX,DestY}),
-  walking(State, Action, Flower, {DestX,DestY}, {AddX,AddY}, Sender).
+  InputCheck = abs((DestX rem 80) + (DestY rem 80)) == 0,
+  case InputCheck of
+     false ->
+       io:fwrite("Wrong input to handle_cast(walkToFlower), input ={~p,~p} ~n",[DestX, DestY]);
+     true ->
+       Location = State#gardener.location,
+       {AddX,AddY} = calculateProgress(Location, {DestX,DestY}),
+       io:fwrite("walkToFlower: Location = ~p, calc = {~p, ~p} ~n",[Location, AddX,AddY]),
+       walking(State#gardener{state = walkToFlower}, Action, Flower, {DestX,DestY}, {AddX,AddY}, Sender)
+  end.
 
-handle_cast(handleFlower, State) ->
-  erlang:error(not_implemented).
+rest(State,Sender) ->
+  %TODO gen_server:cast(Sender,{changeGardenerState, State#gardener{state = resting}}}),
+  io:fwrite("rest: State = ~p ~n",[State]).
 
-walking(State, Action, Flower, {DestX,DestY}, {AddX,AddY}, Sender) ->
+walking(State, Action, Flower, {DestX,DestY}, {StepX,StepY}, Sender) ->
   timer:sleep(?walkTime),
   {MyX,MyY} = State#gardener.location,
-  Arrive = isArrive(MyX, MyY, DestX, DestY), %math:sqrt(((math:pow(MyY - DestY,2) + math:pow(MyX - DestX,2)))) < 30,
+  Arrive = isArrive(MyX, MyY, DestX, DestY),
+  io:fwrite("walking: State= ~p Location = {~p, ~p}, Dest = {~p, ~p}, Arrive = ~p ~n",[State, MyX,MyY,DestX, DestY, Arrive]),
   case Arrive of
     false ->
-      NewX = MyX + AddX,
-      NewY = MyY + AddY,
-      gen_server:cast(Sender,{changeGardenerState, State#gardener{location = {NewX,NewY}}}),
-      walking(State#gardener{location = {NewX,NewY}}, Action, Flower, {DestX,DestY}, {AddX,AddY}, Sender);
+      NewX = updateLocation(MyX, DestX),
+      NewY = updateLocation(MyY, DestY),
+      %TODO gen_server:cast(Sender,{changeGardenerState, State#gardener{location = {NewX,NewY}}}),
+      walking(State#gardener{location = {NewX,NewY}}, Action, Flower, {DestX,DestY}, {StepX,StepY}, Sender);
     true ->
-      gen_server:cast(Sender,{changeGardenerState, State#gardener{state = {handleFlower, Action}}}),
-      handleFlower(State#gardener{state = {handleFlower, Action}}, Action, Flower, Sender)
+      Status = State#gardener.state,
+      case Status of
+        walkRandom ->
+          walkRandom;%randWalk(State,Sender);
+        walkToFlower ->
+          %TODO gen_server:cast(Sender,{changeGardenerState, State#gardener{state = {handleFlower, Action}}}),
+          handleFlower(State#gardener{state = {handleFlower, Action}}, Action, Flower, Sender)
+      end
+  end.
+
+updateLocation(Location, Dest) ->
+  Delta = Dest - Location,
+  if
+    Delta == 0 ->
+      Location;
+    Delta > 0 ->
+      Location + ?squareSize;
+    Delta < 0 ->
+      Location - ?squareSize
   end.
 
 isArrive(MyX, MyY, DestX, DestY) ->
-  math:sqrt(((math:pow(MyY - DestY,2) + math:pow(MyX - DestX,2)))) < ?progressSize.
+   ((MyX == DestX) and (MyY == DestY)).
 
 handleFlower(State, Action, Flower, Sender) ->
-  Flower ! handleProblem, %TODO check flower module
+  io:fwrite("handleFlower1, State= ~p ~n", [State]),
+  %TODO Flower ! handleProblem, %TODO check flower module
   timer:sleep(?handle),
-  gen_server:cast(Sender,{changeGardenerState, State#gardener{state = walkRandom}}),%TODO: change after write gen_server
+  %TODO gen_server:cast(Sender,{changeGardenerState, State#gardener{state = walkRandom}}),%TODO: change after write gen_server
   timer:sleep(2000),
-  walkRandom(State#gardener{state = walkRandom}, Sender).
+  rest(State#gardener{state = resting}, Sender).
+  %randWalk(State#gardener{state = walkRandom}, Sender).
 
-walkRandom(State,Sender) ->
-  erlang:error(not_implemented).
+
 
 calculateProgress({MyX,MyY},{DestX,DestY}) ->
-  Dx = (MyX - DestX),
-  Dy = (MyY - DestY),
-  Alpha = math:atan2(Dy,Dx) + math:atan(1) * 4,
-  {round(math:cos(Alpha)*?progressSize),round(math:sin(Alpha)*?progressSize)}.
+  Dx = (DestX - MyX),
+  Dy = (DestY - MyY),
+  StepX = Dx/?squareSize,
+  StepY = Dy/?squareSize,
+  Steps = {StepX, StepY},
+  io:fwrite("calculateProgress: Steps = ~p ~n",[Steps]),
+  Steps.
+
+handle_cast(handleFlower, State) ->
+  io:fwrite("handleFlower ~n").
+%erlang:error(not_implemented).
 
 
+%%randWalk(State,Sender) -> %TODO need to update to new walking
+%%  Xrand = getRandomPoint(),
+%%  Yrand = getRandomPoint(),
+%%  Location = State#gardener.location,
+%%  {AddX,AddY} = calculateProgress(Location, {Xrand,Yrand}),
+%%  io:fwrite("randWalk: State= ~p, Location = ~p, Dest = {~p,~p} calc = {~p, ~p} ~n",[State,Location, Xrand,Yrand, AddX,AddY]),
+%%  walking(State, walkRandom, walkRandom, {Xrand,Yrand}, {AddX,AddY}, Sender).
+
+%%getRandomPoint() ->
+%%  rand:uniform(?gardenSize).
+
+%%walking(State, Action, Flower, {DestX,DestY}, {AddX,AddY}, Sender) ->
+%%  timer:sleep(?walkTime),
+%%  {MyX,MyY} = State#gardener.location,
+%%  Arrive = isArrive(MyX, MyY, DestX, DestY), %math:sqrt(((math:pow(MyY - DestY,2) + math:pow(MyX - DestX,2)))) < 30,
+%%  io:fwrite("walking: State= ~p Location = {~p, ~p}, Arrive = ~p ~n",[State, MyX,MyY, Arrive]),
+%%  case Arrive of
+%%    false ->
+%%      NewX = MyX + AddX,
+%%      NewY = MyY + AddY,
+%%      %TODO gen_server:cast(Sender,{changeGardenerState, State#gardener{location = {NewX,NewY}}}),
+%%      walking(State#gardener{location = {NewX,NewY}}, Action, Flower, {DestX,DestY}, {AddX,AddY}, Sender);
+%%    true ->
+%%      Status = State#gardener.state,
+%%      case Status of
+%%        walkRandom ->
+%%          walkRandom;%randWalk(State,Sender);
+%%        walkToFlower ->
+%%          %TODO gen_server:cast(Sender,{changeGardenerState, State#gardener{state = {handleFlower, Action}}}),
+%%          handleFlower(State#gardener{state = {handleFlower, Action}}, Action, Flower, Sender)
+%%      end
+%%  end.
+
+%%calculateProgress({MyX,MyY},{DestX,DestY}) ->
+%%  Dx = (MyX - DestX),
+%%  Dy = (MyY - DestY),
+%%  Alpha = math:atan2(Dy,Dx) + math:atan(1) * 4,
+%%  Step = {round(math:cos(Alpha)*?squareSize),round(math:sin(Alpha)*?squareSize)},
+%%  io:fwrite("calculateProgress: Alpha = ~p, Step = ~p ~n",[Alpha,Step]),
+%%  Step.
 
 %%run(Gardener, Flower, Destination, Self) ->
 %%  State = Gardener#gardener.state,
@@ -133,7 +228,7 @@ calculateProgress({MyX,MyY},{DestX,DestY}) ->
 %%            run(Gardener#gardener{state = {handleFlower, Action}}, Flower, _, Self)
 %%        end;
 %%      _ ->
-%%          print("error gardener state")
+%%          io:fwrite("error gardener state")
 %%    end
 %%  end.
 %%
@@ -141,8 +236,8 @@ calculateProgress({MyX,MyY},{DestX,DestY}) ->
 %%
 %%
 %%
-%%handle_call(Request, From, State) ->
-%%  erlang:error(not_implemented).
-%%
 %%handle_cast(Request, State) ->
 %%  erlang:error(not_implemented).
+handle_call(Request, From, State) ->
+  erlang:error(not_implemented).
+
