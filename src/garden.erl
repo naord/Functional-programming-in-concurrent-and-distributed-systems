@@ -69,7 +69,16 @@ handle_cast({gardenerHandleFlower,Gardener}, NewState) ->
   {noreply, NewState};
 
 %From gardener
-%Location + garden movement
+handle_cast({changeGardenerGarden,Gardener}, NewState) ->
+  gen_server:cast(get(server),{changeGardenerGarden,Gardener}),
+  {noreply, NewState};
+
+%From gardener
+handle_cast({gardenerResting,Gardener}, NewState) ->
+  gen_server:cast(get(server),{gardenerResting,Gardener}),
+  {noreply, NewState};
+
+%From gardener
 handle_cast({changeGardenerLocation,Gardener}, NewState) ->
   gen_server:cast(get(server),{changeGardenerLocation,Gardener}),
   {noreply, NewState}.
