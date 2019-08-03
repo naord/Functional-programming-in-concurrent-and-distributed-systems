@@ -29,7 +29,7 @@
 %%           *location is multiple of 80
 %%----------------------------------------------------
 
--include("globalVariable.hrl").
+-include("globalVariables.hrl").
 
 newGardener(Id, Type, State, Location)->
   #gardener{id = Id, type = Type, state = State, location = Location}.
