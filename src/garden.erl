@@ -53,13 +53,13 @@ handle_cast({updateFlowerStatus,Flower}, NewState) -> %TODO change in flower mod
   {noreply, NewState};
 
 %From Flower
-handle_cast({flowerDie,Flower=#flower{id = Id, gardenerId = none}}, NewState) -> %TODO flower need owner in case garden on his way.
+handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) -> %TODO flower need owner in case garden on his way.
   ets:delete(flowers,Id),%delete from ets
   gen_server:cast(get(server), {deleteFlower,Id}),%Send to main server delete flower
   {noreply, NewState};
 
 %From Flower
-handle_cast({flowerDie,Flower=#flower{id = Id, gardenerId = GardenerId}}, NewState) ->
+handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = GardenerId}}, NewState) ->
   gen_server:cast({global,GardenerId},cancelWalk),
   ets:delete(flowers,Id),%delete from ets
   gen_server:cast(get(server), {deleteFlower,Id}),%Send to main server delete flower
