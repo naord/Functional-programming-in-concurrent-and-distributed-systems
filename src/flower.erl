@@ -11,7 +11,7 @@
 
 %% API
 -export([flowerAsStateMachine/3, getTolarableTime/1, getRandomStatus/0, tests/0, print/1, print/2]).
--include("glovalVariables.hrl").
+-include("globalVariables.hrl").
 
 newFlower(ID, Type, Status, PointsLifeTime)->
   #flower{id = ID, type = Type, status = Status, pointsLifeTime = PointsLifeTime}.
