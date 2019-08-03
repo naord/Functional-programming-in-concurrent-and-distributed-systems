@@ -13,7 +13,7 @@
 -behaviour(wx_object).
 
 -include("wx.hrl").
--include("globalVariable.hrl").
+-include("globalVariables.hrl").
 
 %% API
 -export([start_link/0]).
