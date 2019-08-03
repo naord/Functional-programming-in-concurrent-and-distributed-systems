@@ -13,16 +13,15 @@
 -export([flowerAsStateMachine/3, getTolarableTime/1, getRandomStatus/0, tests/0, print/1, print/2]).
 -include("globalVariables.hrl").
 
-newFlower(ID, Type, Status, PointsLifeTime)->
-  #flower{id = ID, type = Type, status = Status, pointsLifeTime = PointsLifeTime}.
+newFlower(ID, Type, Status, GardenerID, GardenID, X, Y)->
+  #flower{id = ID, type = Type, status = Status,  gardenerID = GardenerID, gardenID = GardenID, x = X, y = Y }.
 
 -define(pestsTime, 100).
 -define(waterTime, 200).
 -define(weedTime, 300).
 -define(fertalizeTime, 400).
 
-
-flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, pointsLifeTime = PointsLifeTime},
+flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, gardenerID = GardenerID, gardenID = GardenID, x = X, y = Y },
     StartTimeProblem,
     MyGardenServerPID)->
 
@@ -34,19 +33,24 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, pointsLif
       print("New Status = ", NewStatus),
 
       % Create new record
-      NewStateFlower = newFlower(ID, NewStatus, PointsLifeTime),
+      NewStateFlower = newFlower(ID, Type, NewStatus, GardenerID, GardenID, X, Y),
 
       % Send report to the server about status changing.
       %TODO gardenGenServer:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
 
       flowerAsStateMachine(NewStateFlower, 0, MyGardenServerPID);
 
+    {setGardenerID, NewGardenerID} ->
+      NewStateFlower = newFlower(ID, Type, Status, NewGardenerID, GardenID, X, Y),
+      flowerAsStateMachine(NewStateFlower, StartTimeProblem, MyGardenServerPID);
+
+
     handleProblem ->
       % Time the gardener handle the problem
       timer:sleep(2000),
 
       % New record flower with normal state.
-      NewStateFlower = newFlower(ID, normal, PointsLifeTime),
+      NewStateFlower = newFlower(ID, Type, normal, GardenerID, GardenID, X, Y),
       print("Handle the problem after = ", StartTimeProblem),
       % Change the status of the flower in the server to normal.
       %TODO gardenGenServer:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
@@ -91,21 +95,24 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, pointsLif
 
 getTolarableTime(Status)->
   case Status of
-    pests -> ?pestsTime;
-    water -> ?waterTime;
-    weed  -> ?weedTime;
-    fertalize -> ?fertalizeTime
+    pests_ant    -> ?pestsTime;
+    pests_purple -> ?pestsTime;
+    pests_green  -> ?pestsTime;
+    wilted       -> ?waterTime
+%%    weed   -> ?weedTime;
+%%    fertalize -> ?fertalizeTime
   end.
 
 getRandomStatus()->
   {T1,T2,T3} = now(),
   random:seed(T1, T2, T3),
-  RandomStatus = random:uniform(100),
+  RandomStatus = random:uniform(120 - ?level),
   if
-    RandomStatus < 10 -> pests;
-    RandomStatus < 60 -> water;
-    RandomStatus < 80 -> weed;
-    RandomStatus < 100 -> fertalize
+    RandomStatus < 10 -> pests_ant;
+    RandomStatus < 20 -> pests_purple;
+    RandomStatus < 30 -> pests_green;
+    RandomStatus < 60 -> wilted;
+    RandomStatus < 120 - ?level -> normal
   end.
 
 tests()->
