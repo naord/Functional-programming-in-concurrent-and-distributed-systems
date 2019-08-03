@@ -1,14 +1,17 @@
 -author("nir").
 
 % Global Records
--record(flower,{id, type, status, pointsLifeTime}).
+-record(flower,{id, type, status, gardenerID, x, y}).
 -record(gardener,{id, type, state, location = {0,0}}).
 -record(graphic_server,{objectsMatrix, gardenFrame, gardenPainter, numOfServers,
   numberOfFlower, allImages, lawnImgs}).
 
+% Simulation parameter
+-define(level, 60).
+
 % Constant
--define(screen_width , 1360).
--define(screen_height, 960).
+-define(screen_width , 1280).
+-define(screen_height, 880).
 -define(delay_within_rect, 500).
 -define(delay_between_rect, 330).
 
