@@ -10,7 +10,7 @@
 -author("Naor Dahan").
 
 -behaviour(gen_server).
--include("../globalVariables.hrl").
+-include("globalVariables.hrl").
 
 %% API
 -export([init/1, handle_call/3, handle_cast/2]).
