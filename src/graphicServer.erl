@@ -11,8 +11,9 @@
 -author("nirkov").
 
 -behaviour(wx_object).
+-include_lib("stdlib/include/qlc.hrl").
+-include_lib("wx/include/wx.hrl").
 
--include("wx.hrl").
 -include("globalVariables.hrl").
 
 %% API
@@ -21,65 +22,48 @@
 -export([ start/0,
   init/1,
   handle_info/2,
-  handle_call/3,
+  handle_call/1,
+  handle_cast/4,
   handle_cast/2,
   terminate/0,
   handle_event/2,
   drawing_timer/1]).
 
-terminate()->ok.
-start_link()->ok.
+
 start() ->
   wx_object:start(?MODULE, [wx:new()], []).
 
-
-
--spec(init(Args :: term()) ->
-  {ok, State :: #graphic_server{}} | {ok, State :: #graphic_server{}, timeout() | hibernate} |
-  {stop, Reason :: term()} | ignore).
 
 init([WxObject]) ->
   initializeGraphicWindow(WxObject).
 
 
--spec(handle_call(Request :: term(), From :: {pid(), Tag :: term()},
-    State :: #graphic_server{}) ->
-  {reply, Reply :: term(), NewState :: #graphic_server{}} |
-  {reply, Reply :: term(), NewState :: #graphic_server{}, timeout() | hibernate} |
-  {noreply, NewState :: #graphic_server{}} |
-  {noreply, NewState :: #graphic_server{}, timeout() | hibernate} |
-  {stop, Reason :: term(), Reply :: term(), NewState :: #graphic_server{}} |
-  {stop, Reason :: term(), NewState :: #graphic_server{}}).
-
-handle_call(_Request, _From, State) ->
-  {reply, ok, State}.
+handle_call(state) ->
+  get(my_state).
 
 
--spec(handle_cast(Request :: term(), State :: #graphic_server{}) ->
-  {noreply, NewState :: #graphic_server{}} |
-  {noreply, NewState :: #graphic_server{}, timeout() | hibernate} |
-  {stop, Reason :: term(), NewState :: #graphic_server{}}).
+handle_cast(update, #flower{id = _, type = Type, status = Status, gardenerID = _, x = X, y = Y}) ->
+  updateFlowerStatus(Type, Status, {X, Y});
 
+handle_cast(newFlower, #flower{id = _, type = Type, status = _, gardenerID = _, x = X, y = Y}) ->
+  drawNewFLower(Type , X, Y);
 
-handle_cast(update, #flower{id = ID, type = Type, status = Status, pointsLifeTime = PointsLifeTime}) ->
-  ok.
+handle_cast(rest, #gardener{id = _, type = Type, state = _, location = {X, Y}}) ->
+  sitDownTheGardener(Type, X, Y).
 
+handle_cast(makeSteps, NewX, NewY, #gardener{id = _, type = Type, state = _, location = {X, Y}}) ->
+  makeSteps(Type, NewX, NewY, {X, Y}).
 
-
-
-
-  -spec(handle_info(Info :: timeout() | term(), State :: #graphic_server{}) ->
-{noreply, NewState :: #graphic_server{}} |
-{noreply, NewState :: #graphic_server{}, timeout() | hibernate} |
-{stop, Reason :: term(), NewState :: #graphic_server{}}).
 
 handle_info(_Info, State) ->
   {noreply, State}.
 
 
-
 handle_event(A,B)-> ok.
 
+terminate() -> ok.
+
+start_link()-> ok.
 
 
 
@@ -123,8 +107,8 @@ initializeGraphicWindow(Wx)->
     iris_r_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_r_pests_green), 80, 80)),
     iris_l_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_l_pests_green), 80, 80)),
 
-    iris_r  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_r), 80, 80)),
-    iris_l  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_l), 80, 80)),
+    iris_r_normal  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_r), 80, 80)),
+    iris_l_normal   => wxBitmap:new(wxImage:scale(wxImage:new(?iris_l), 80, 80)),
 
     % red
     red_r_wilted  => wxBitmap:new(wxImage:scale(wxImage:new(?red_r_wilted), 80, 80)),
@@ -139,8 +123,8 @@ initializeGraphicWindow(Wx)->
     red_r_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?red_r_pests_green), 80, 80)),
     red_l_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?red_l_pests_green), 80, 80)),
 
-    red_r  => wxBitmap:new(wxImage:scale(wxImage:new(?red_r), 80, 80)),
-    red_l  => wxBitmap:new(wxImage:scale(wxImage:new(?red_l), 80, 80)),
+    red_r_normal   => wxBitmap:new(wxImage:scale(wxImage:new(?red_r), 80, 80)),
+    red_l_normal   => wxBitmap:new(wxImage:scale(wxImage:new(?red_l), 80, 80)),
 
     % upload gardener images - nir and naor images
     nir_left_first    => wxBitmap:new(wxImage:scale(wxImage:new(?nir_left_first), 80, 80)),
@@ -165,9 +149,9 @@ initializeGraphicWindow(Wx)->
   % Initialize statistic
   wxFrame:setStatusText(GardenFrame,
     "Number of flowers:  " ++ integer_to_list(3) ++ "    " ++
-    "Number of Gardener:  " ++ integer_to_list(3) ++ "    " ++
-    "Connected servers:  " ++ integer_to_list(2)),
-  
+      "Number of Gardener:  " ++ integer_to_list(3) ++ "    " ++
+      "Connected servers:  " ++ integer_to_list(2)),
+
 
   put(my_state, #graphic_server{
     objectsMatrix  = MatrixObjectsPosition,
@@ -225,65 +209,68 @@ drawing_timer(PID)->
 
 
 updateFlowerStatus(Type, NewStatus, {X, Y}) ->
-  case NewStatus of
-     normal -> ToUpdate = Type;
-     water  -> ToUpdate = atom_to_list(Type) ++ "_water";
-     pests  -> ToUpdate = atom_to_list(Type) ++ "_pests_" ++ getRandomBug()
+  if
+    NewStatus =:= kill -> NewFlowerToDraw = lawn_peice;
+    true               -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ atom_to_list(NewStatus))
   end,
 
   MyState = get(my_state),
-  NewAtomStatus = list_to_atom(ToUpdate),
-  NewMap = updateObjectStatusInObjectsMatrix(X, Y, NewAtomStatus, (MyState#graphic_server.objectsMatrix)),
-  wxDC:drawBitmap(MyState#graphic_server.gardenFrame, maps:get(NewAtomStatus, MyState#graphic_server.allImages), {X, Y}),
+  NewMap = updateObjectStatusInObjectsMatrix(X, Y, NewFlowerToDraw, (MyState#graphic_server.objectsMatrix)),
+  wxDC:drawBitmap(MyState#graphic_server.gardenFrame, maps:get(NewFlowerToDraw, MyState#graphic_server.allImages), {X, Y}),
   erase(my_state),
   put(my_state, MyState#graphic_server{objectsMatrix = NewMap}).
 
 
-addFlower(X, Y)->
-  NewFlower = getRandomFlower(),
+drawNewFLower(Type , X, Y)->
   MyState   = get(my_state),
   erase(my_state),
 
   % Draw new random flower.
-  wxDC:drawBitmap(MyState#graphic_server.gardenFrame, NewFlower, MyState#graphic_server.allImages, {X, Y}),
+  wxDC:drawBitmap(MyState#graphic_server.gardenFrame, Type, MyState#graphic_server.allImages, {X, Y}),
 
   % Update the state record about the new number of the flowers and save in upon the previous record.
-  NewNumberOfFLowers = MyState#graphic_server.numberOfFlower,
+  NewNumberOfFLowers = MyState#graphic_server.numberOfFlower + 1,
 
   % replace the square lawn in this coordinates to be the selected type flower
-  NewObjectsMatrix = updateObjectStatusInObjectsMatrix(X,Y,NewFlower, MyState#graphic_server.objectsMatrix),
-  put(my_state, MyState#graphic_server{numberOfFlower = NewNumberOfFLowers, objectsMatrix = NewObjectsMatrix}),
-  NewFlower.
+  NewObjectsMatrix = updateObjectStatusInObjectsMatrix(X, Y, Type, MyState#graphic_server.objectsMatrix),
+  put(my_state, MyState#graphic_server{numberOfFlower = NewNumberOfFLowers, objectsMatrix = NewObjectsMatrix}).
 
 
-makeSteps(NewX, NewY, {X, Y})->
-  MyState = get(my_state),
-  WxDC = MyState#graphic_server.gardenPainter,
+makeSteps(Type, NewX, NewY, {X, Y})->
+  MyState        = get(my_state),
+  WxDC           = MyState#graphic_server.gardenPainter,
+  AllImages      = MyState#graphic_server.allImages,
   PrevObjectInXY = maps:get({X, Y}, MyState#graphic_server.objectsMatrix),
   if
     NewX < X ->
-      wxDC:drawBitmap(WxDC, maps:get(nir_left_second, MyState#graphic_server.allImages), {X, Y}),
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"), AllImages), {X, Y}),
       timer:sleep(?delay_between_rect),
       wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {X, Y}),
-      wxDC:drawBitmap(WxDC, maps:get(nir_left_first, MyState#graphic_server.allImages), {NewX, NewY}),
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_first"), AllImages), {NewX, NewY}),
       timer:sleep(?delay_within_rect),
-      wxDC:drawBitmap(WxDC, maps:get(nir_left_second, MyState#graphic_server.allImages), {NewX, NewY});
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"),AllImages), {NewX, NewY});
 
     NewX =:= X ->
-      wxDC:drawBitmap(WxDC, maps:get(nir_left_second, MyState#graphic_server.allImages), {X, Y}),
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"), AllImages), {X, Y}),
       timer:sleep(?delay_between_rect),
       wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {X, Y}),
-      wxDC:drawBitmap(WxDC, maps:get(nir_left_first, MyState#graphic_server.allImages), {NewX, NewY});
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_first"), AllImages), {NewX, NewY});
 
     NewX > X ->
-      wxDC:drawBitmap(WxDC, maps:get(nir_right_second, MyState#graphic_server.allImages), {X, Y}),
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {X, Y}),
       timer:sleep(?delay_between_rect),
       wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {X, Y}),
-      wxDC:drawBitmap(WxDC, maps:get(nir_right_first, MyState#graphic_server.allImages), {NewX, NewY}),
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_first"), AllImages), {NewX, NewY}),
       timer:sleep(?delay_within_rect),
-      wxDC:drawBitmap(WxDC, maps:get(nir_right_second, MyState#graphic_server.allImages), {NewX, NewY})
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {NewX, NewY})
   end.
 
+sitDownTheGardener(Type, X, Y)->
+  ThisTypeSit =  list_to_atom(atom_to_list(Type) ++ "_sit"),
+  MyState = get(my_state),
+  WxDC = MyState#graphic_server.gardenPainter,
+  wxDC:drawBitmap(WxDC, maps:get(ThisTypeSit, MyState#graphic_server.allImages), {X, Y}),
+  ok.
 
 %===================================================================
 %                      Get Random Objects Functions
@@ -291,11 +278,11 @@ makeSteps(NewX, NewY, {X, Y})->
 
 getRandomBug()->
   RandomBugLeft = getRandomNumber(20),
-   if
-     RandomBugLeft < 10 -> "ant";
-     RandomBugLeft < 20 -> "green";
-     true -> "purple"
-   end.
+  if
+    RandomBugLeft < 10 -> "ant";
+    RandomBugLeft < 20 -> "green";
+    true -> "purple"
+  end.
 
 
 getRandomFlower()->
@@ -319,23 +306,6 @@ getRandomNumber(Gap)->
   random:seed(T1, T2, T3),
   random:uniform(Gap).
 
-
-%%fillMatrix(Insert, {X, Y}, Map)->
-%%  if
-%%    X < 1281 ->
-%%      NewMergeMap = maps:merge(Map, #{{X, Y} => Insert}),
-%%      NewMergeMapWithCal = fillCol(Insert, {X, Y + 80}, NewMergeMap),
-%%      fillMatrix(Insert, {X + 80, Y}, NewMergeMapWithCal);
-%%    true -> Map
-%%  end.
-%%
-%%fillCol(Insert, {X, Y}, Map) ->
-%%  if
-%%    Y < 881 ->
-%%      NewMergeMap = maps:merge(Map, #{{X, Y} => Insert}),
-%%      fillCol(Insert, {X, Y + 80}, NewMergeMap);
-%%    true -> Map
-%%  end.
 
 initObjectMatrixAsMap(_, [], Map) ->
   Map;
@@ -364,9 +334,26 @@ drawFromRecovery() ->
 
 checkCoordinate(X, Y) ->
   if
-    (((X >= 0) and (X =< 1280)) and ((X >= 0) and (X =< 880)))
+    (((X >= 0) and (X =< 1280)) and ((Y >= 0) and (Y =< 880)))
       and ((X rem 80 =:= 0) and (Y rem 80 =:= 0))-> ok;
     true -> error
   end.
 
 
+
+%%fillMatrix(Insert, {X, Y}, Map)->
+%%  if
+%%    X < 1281 ->
+%%      NewMergeMap = maps:merge(Map, #{{X, Y} => Insert}),
+%%      NewMergeMapWithCal = fillCol(Insert, {X, Y + 80}, NewMergeMap),
+%%      fillMatrix(Insert, {X + 80, Y}, NewMergeMapWithCal);
+%%    true -> Map
+%%  end.
+%%
+%%fillCol(Insert, {X, Y}, Map) ->
+%%  if
+%%    Y < 881 ->
+%%      NewMergeMap = maps:merge(Map, #{{X, Y} => Insert}),
+%%      fillCol(Insert, {X, Y + 80}, NewMergeMap);
+%%    true -> Map
+%%  end.
