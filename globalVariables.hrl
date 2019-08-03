@@ -1,8 +1,8 @@
 -author("nir").
 
 % Global Records
--record(flower,{id, type, status, gardenerID, x, y}).
--record(gardener,{id, type, state, location = {0,0}}).
+-record(flower,{id, type, status, gardenerId, pointsLifeTime, x, y}).
+-record(gardener,{id, type, state, location = {0,0}, gardenNumber}).
 -record(graphic_server,{objectsMatrix, gardenFrame, gardenPainter, numOfServers,
   numberOfFlower, allImages, lawnImgs}).
 
@@ -14,6 +14,11 @@
 -define(screen_height, 880).
 -define(delay_within_rect, 500).
 -define(delay_between_rect, 330).
+
+-define(garden1Name,garden1).
+-define(garden2Name,garden2).
+-define(garden3Name,garden3).
+-define(garden4Name,garden4).
 
 
 % Global Variables
