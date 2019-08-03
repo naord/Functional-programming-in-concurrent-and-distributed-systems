@@ -1,7 +1,7 @@
 -author("nir").
 
 % Global Records
--record(flower,{id, type, status, gardenerId, gardenId,pointsLifeTime, x, y}).
+-record(flower,{id, type, status, gardenerID, gardenID, pointsLifeTime, x, y}).
 -record(gardener,{id, type, state, location = {0,0}, gardenNumber , flowerId = none}).
 -record(graphic_server,{objectsMatrix, gardenFrame, gardenPainter, numOfServers,
   numberOfFlower, allImages, lawnImgs}).
