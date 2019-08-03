@@ -8,7 +8,9 @@
 %%%-------------------------------------------------------------------
 -module(gardener).
 -author("Naor Dahan").
+
 -behavior(gen_server).
+-include("globalVariables.hrl").
 
 %% API
 -export([init/1, handle_cast/6, handle_cast/2, handle_call/3]).
@@ -29,7 +31,6 @@
 %%           *location is multiple of 80
 %%----------------------------------------------------
 
--include("globalVariables.hrl").
 
 newGardener(Id, Type, State, Location)->
   #gardener{id = Id, type = Type, state = State, location = Location}.
