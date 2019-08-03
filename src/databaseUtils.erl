@@ -39,7 +39,7 @@ startDatabase()->
 
 listsRecordOfFlowerInGarden(GardenID)->
   F = fun() ->
-    Quary = qlc:q([Flower || Flower <- mnesia:table(flowers), Flower#flower.gardenerID =:= GardenID]),
+    Quary = qlc:q([Flower || Flower <- mnesia:table(flowers), Flower#flower.gardenerId =:= GardenID]),
     qlc:e(Quary)
       end,
 
@@ -79,9 +79,9 @@ updateFlowerRecord(Flower)->
 
 test()->
   startDatabase(),
-  updateFlowerRecord(#flower{id = 1, type = a, status = water,  gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
-  updateFlowerRecord(#flower{id = 1, type = a, status = water,  gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
-  updateFlowerRecord(#flower{id = 2, type = a, status = water,  gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
+  updateFlowerRecord(#flower{id = 1, type = a, status = water,  gardenerId = 1, gardenID = 2, x = 10, y = 10 }),
+  updateFlowerRecord(#flower{id = 1, type = a, status = water,  gardenerId = 1, gardenID = 2, x = 10, y = 10 }),
+  updateFlowerRecord(#flower{id = 2, type = a, status = water,  gardenerId = 1, gardenID = 2, x = 10, y = 10 }),
   L = listsRecordOfFlowerInGarden(2),
   X =3.
 
