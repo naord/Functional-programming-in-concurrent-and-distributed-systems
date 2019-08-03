@@ -17,6 +17,8 @@
 -export([start_link/2,terminate/2]).
 -record(state, {}).
 
+%TODO check if need more msg from/to flower and main server
+
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
 start_link(GlobalName, MainServerGlobalName) ->
@@ -69,6 +71,11 @@ handle_cast({gardenerHandleFlower,Gardener}, NewState) ->
   {noreply, NewState};
 
 %From gardener
+handle_cast({gardenerWalkToFlower,Gardener}, NewState) ->
+  gen_server:cast(get(server),{gardenerWalkToFlower,Gardener}),
+  {noreply, NewState};
+
+%From gardener
 handle_cast({changeGardenerGarden,Gardener}, NewState) ->
   gen_server:cast(get(server),{changeGardenerGarden,Gardener}),
   {noreply, NewState};
@@ -89,7 +96,7 @@ terminate(Reason, State) ->
 % Send msg to gardner and flower
 sendGardenerToFlower(Gardener, FlowerLocation, FlowerId) ->
   [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
-  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}),%TODO change function in gardener.
+  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}),
   FlowerPid ! {gardnerComing,Gardener#gardener.id}. %TODO update flower file to have gardnerComing
 
 addFlower(Flower) ->

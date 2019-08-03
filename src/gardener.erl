@@ -31,8 +31,6 @@
 %%           *location is multiple of 80
 %%----------------------------------------------------
 
-%%TODO  change all cast msg
-
 newGardener(Id, Type, State, Location)->
   #gardener{id = Id, type = Type, state = State, location = Location}.
 
@@ -72,7 +70,8 @@ handle_cast({walkToFlower, FlowerId, {DestX,DestY}}, State) ->
      true ->
        Location = State#gardener.location,
        {AddX,AddY} = calculateProgress(Location, {DestX,DestY}),
-       io:fwrite("walkToFlower: Location = ~p, calc = {~p, ~p} ~n",[Location, AddX,AddY]),
+       io:fwrite("walkToFlower: Location = ~p, calc = {~p, ~p} ~n",[Location, AddX,AddY]),%TODO for debug
+       gen_server:cast(gardenName(State),{gardenerWalkToFlower, State#gardener{state = walkToFlower}}),
        walking(State#gardener{state = walkToFlower}, FlowerId, {DestX,DestY}, {AddX,AddY})
   end;
 
