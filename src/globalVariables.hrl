@@ -2,7 +2,7 @@
 
 % Global Records
 -record(flower,{id, type, status, gardenerId, pointsLifeTime, x, y}).
--record(gardener,{id, type, state, location = {0,0}, gardenNumber}).
+-record(gardener,{id, type, state, location = {0,0}, gardenNumber , flowerId = none}).
 -record(graphic_server,{objectsMatrix, gardenFrame, gardenPainter, numOfServers,
   numberOfFlower, allImages, lawnImgs}).
 

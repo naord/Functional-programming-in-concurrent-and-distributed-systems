@@ -35,45 +35,55 @@ init([MainServerGlobalName]) ->
   io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
   {ok, #state{}}.
 
+%From MainServer
 handle_cast({addFlower,Flower}, NewState) ->
   addFlower(Flower),
   {noreply, NewState};
 
+%From MainServer
+handle_cast({sendGardenerToFlower, Gardener, FlowerLocation, FlowerId}, NewState) ->
+  sendGardenerToFlower(Gardener,FlowerLocation,FlowerId),
+  {noreply, NewState};
+
+%From Flower
 handle_cast({updateFlowerStatus,Flower}, NewState) -> %TODO change in flower module
   gen_server:cast(get(server),{updateFlowerStatus,Flower}, NewState),%Send to main server updateFlowerStatus
   {noreply, NewState};
 
-%TODO update flower record
+%From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerId = none}}, NewState) -> %TODO flower need owner in case garden on his way.
   ets:delete(flowers,Id),%delete from ets
   gen_server:cast(get(server), {deleteFlower,Id}),%Send to main server delete flower
   {noreply, NewState};
 
+%From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerId = GardenerId}}, NewState) ->
-  %[{_,GardenerPid}] = ets:lookup(gardeners, GardenerId),%delete from ets
-  gen_server:cast({global,GardenerId},{delete_flower,Id}),%GardenerPid ! abort,
+  gen_server:cast({global,GardenerId},cancelWalk),
   ets:delete(flowers,Id),%delete from ets
   gen_server:cast(get(server), {deleteFlower,Id}),%Send to main server delete flower
   {noreply, NewState};
 
-handle_cast({gardenerWalkToFlower, Gardener, FlowerLocation, FlowerId}, NewState) ->
-  gardenerWalkToFlower(Gardener,FlowerLocation,FlowerId),
+%From gardener
+handle_cast({gardenerHandleFlower,Gardener}, NewState) ->
+  gen_server:cast(get(server),{gardenerHandleFlower,Gardener}),
   {noreply, NewState};
 
-handle_cast({gardenerResting,Gardener}, NewState) ->
-  gen_server:cast(get(server),{gardenerResting,Gardener}),
+%From gardener
+%Location + garden movement
+handle_cast({changeGardenerLocation,Gardener}, NewState) ->
+  gen_server:cast(get(server),{changeGardenerLocation,Gardener}),
   {noreply, NewState}.
 
 terminate(Reason, State) ->
   ok.
 
 % Send msg to gardner and flower
-gardenerWalkToFlower(Gardener, FlowerLocation, FlowerId) ->
+sendGardenerToFlower(Gardener, FlowerLocation, FlowerId) ->
   [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
-  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}).%TODO change function in gardener.
-  %TODO FlowerPid ! {gardner_on_the_way,Gardener#gardener.id}.
+  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}),%TODO change function in gardener.
+  FlowerPid ! {gardnerComing,Gardener#gardener.id}. %TODO update flower file to have gardnerComing
 
 addFlower(Flower) ->
   Pid = self(),
-  FlowerPid = spawn_link(flower,flowerAsStateMachine,[Flower,0,Pid]), % init location_updater process
-  ets:insert(flowers, { Flower#flowers.name,FlowerPid}).
+  FlowerPid = spawn_link(flower,flowerAsStateMachine,[Flower,0,Pid]), %TODO update here & flower file to have the fields
+  ets:insert(flowers, {Flower#flower.id, FlowerPid}).
