@@ -153,6 +153,8 @@ initializeGraphicWindow(Wx)->
       "Connected servers:  " ++ integer_to_list(2)),
 
 
+
+
   put(my_state, #graphic_server{
     objectsMatrix  = MatrixObjectsPosition,
     gardenFrame    = GardenFrame,
@@ -161,42 +163,42 @@ initializeGraphicWindow(Wx)->
     numberOfFlower = 0,
     allImages      = AllImages,
     lawnImgs       = BackgroundImgs}).
-
-
-%%  wxDC:drawBitmap(GardenPainter, maps:get(red_r_pests_green, AllImages), {480, 480}),
-%%  wxDC:drawBitmap(GardenPainter, maps:get(iris_r, AllImages), {800, 320}),
-%%  wxDC:drawBitmap(GardenPainter, maps:get(red_l_wilted, AllImages), {640, 560}),
-%%  wxDC:drawBitmap(GardenPainter, maps:get(iris_r_wilted, AllImages), {560, 160}),
-%%  wxDC:drawBitmap(GardenPainter, maps:get(red_r, AllImages), {320, 320}),
-%%  wxDC:drawBitmap(GardenPainter, maps:get(iris_l_pests_green, AllImages), {720, 480}),
 %%
-%%  A=updateObjectStatusInObjectsMatrix(480, 480, red_r_pests_green, MatrixObjectsPosition),
-%%  B=updateObjectStatusInObjectsMatrix(800, 320, iris_r, A),
-%%  C=updateObjectStatusInObjectsMatrix(640, 560, red_l_wilted, B),
-%%  D=updateObjectStatusInObjectsMatrix(560, 160, iris_r_wilted, C),
-%%  E=updateObjectStatusInObjectsMatrix(320, 320, red_r, D),
-%%  F=updateObjectStatusInObjectsMatrix(720, 480, iris_l_pests_green, E),
+%%A=updateObjectStatusInObjectsMatrix(480, 480, red_r_pests_green, MatrixObjectsPosition),
+%%B=updateObjectStatusInObjectsMatrix(800, 320, iris_r_normal, A),
+%%C=updateObjectStatusInObjectsMatrix(640, 560, red_l_wilted, B),
+%%D=updateObjectStatusInObjectsMatrix(560, 160, iris_r_wilted, C),
+%%E=updateObjectStatusInObjectsMatrix(320, 320, red_r_normal, D),
+%%F=updateObjectStatusInObjectsMatrix(720, 480, iris_l_pests_green, E),
+%%
+%%wxDC:drawBitmap(GardenPainter, maps:get(red_r_pests_green, AllImages), {480, 480}),
+%%wxDC:drawBitmap(GardenPainter, maps:get(iris_r_normal, AllImages), {800, 320}),
+%%wxDC:drawBitmap(GardenPainter, maps:get(red_l_wilted, AllImages), {640, 560}),
+%%wxDC:drawBitmap(GardenPainter, maps:get(iris_r_wilted, AllImages), {560, 160}),
+%%wxDC:drawBitmap(GardenPainter, maps:get(red_r_normal, AllImages), {320, 320}),
+%%wxDC:drawBitmap(GardenPainter, maps:get(iris_l_pests_green, AllImages), {720, 480}),
 
-%%  makeSteps(240, 320, {160, 240}),
-%%  makeSteps(320, 400, {240, 320}),
-%%  makeSteps(400, 480, {320, 400}),
-%%  makeSteps(480, 480, {400, 480}),
-%%  makeSteps(560, 480, {480, 480}),
-%%  makeSteps(640, 560, {560, 480}),
-%%  makeSteps(720, 480, {640, 560}),
-%%  makeSteps(800, 400, {720, 480}),
-%%  makeSteps(800, 320, {800, 400}),
-%%  makeSteps(800, 240, {800, 320}),
-%%  makeSteps(800, 160, {800, 240}),
-%%  makeSteps(720, 160, {800, 160}),
-%%  makeSteps(640, 160, {720, 160}),
-%%  makeSteps(560, 160, {640, 160}),
-%%  makeSteps(480, 160, {560, 160}),
-%%  makeSteps(400, 240, {480, 160}),
-%%  makeSteps(320, 320, {400, 240}),
-%%  makeSteps(240, 400, {320, 320}),
-%%  makeSteps(240, 480, {240, 400}),
-%%  makeSteps(240, 560, {240, 480}).
+%%makeSteps(nir,240, 320, {160, 240}),
+%%makeSteps(nir,320, 400, {240, 320}),
+%%makeSteps(nir,400, 480, {320, 400}),
+%%makeSteps(nir,480, 480, {400, 480}),
+%%makeSteps(nir,560, 480, {480, 480}),
+%%makeSteps(nir,640, 560, {560, 480}),
+%%makeSteps(nir,720, 480, {640, 560}),
+%%makeSteps(nir,800, 400, {720, 480}),
+%%makeSteps(nir,800, 320, {800, 400}),
+%%makeSteps(nir,800, 240, {800, 320}),
+%%makeSteps(nir,800, 160, {800, 240}),
+%%makeSteps(nir,720, 160, {800, 160}),
+%%makeSteps(nir,640, 160, {720, 160}),
+%%makeSteps(nir,560, 160, {640, 160}),
+%%makeSteps(nir,480, 160, {560, 160}),
+%%makeSteps(nir,400, 240, {480, 160}),
+%%makeSteps(nir,320, 320, {400, 240}),
+%%makeSteps(nir,240, 400, {320, 320}),
+%%makeSteps(nir,240, 480, {240, 400}),
+%%makeSteps(nir,240, 560, {240, 480})
+
 
 
 drawing_timer(PID)->
