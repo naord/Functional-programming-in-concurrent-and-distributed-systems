@@ -61,10 +61,9 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   {noreply, NewState}.
 
 
-handle_call({sortedFlowerList, GardenName}, NewState)->
+handle_call({sortedFlowerList, GardenName}, NewState)->  % TODO : THE SENDER SHOULD SEND HANDLE CALL AND WAIT TO LIST?
   SortedList = databaseUtils:flowerListSortedByDangerousLevel(GardenName),
   gen_server:cast(get(GardenName), {listFlowerInDanger, SortedList}, NewState).
-
 
 recovery(GardenID, NewState)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
@@ -72,10 +71,11 @@ recovery(GardenID, NewState)->
   SortedFlowerList   = flowerListSortedByDangerousLevel(GardenID),
 
   % Send obejcts to graphic server to recover
-  gen_server:cast(get(connectUIServerToGarden(GardenID)), {recover, {FlowerInGardenID, GardenerInGardenID}}, NewState),
+  %TODO: NEED TO INIT THE GRAPHIC SERVER HERE AND HANDLE RECOVERY. SHOULD BE HANDLE_CALL TO GRAPHICSERVER?
+  gen_server:cast(get(connectUIServerToGarden(GardenID)), {recovery, {FlowerInGardenID, GardenerInGardenID}}, NewState),
 
   % Send the flowers sorted list by dangerous level to garden
-  gen_server:cast(get(GardenID), {recover, SortedFlowerList}, NewState).
+  gen_server:cast(get(GardenID), {recovery, SortedFlowerList}, NewState).
 
 
 

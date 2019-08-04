@@ -30,12 +30,13 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
       NewStateFlower = newFlower(ID, Type, NewStatus, 0, GardenerID, GardenID, X, Y),
 
       % Send report to the server about status changing.
-      gardenGenServer:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
+      gen_server:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
 
       flowerAsStateMachine(NewStateFlower, MyGardenServerPID);
 
     {setGardenerID, NewGardenerID} ->
       NewStateFlower = newFlower(ID, Type, Status, TimeSinceProblem, NewGardenerID, GardenID, X, Y),
+      gen_server:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
       flowerAsStateMachine(NewStateFlower, MyGardenServerPID);
 
 
@@ -47,7 +48,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
       NewStateFlower = newFlower(ID, Type, normal, 0, GardenerID, GardenID, X, Y),
 
       % Change the status of the flower in the server to normal.
-      garden:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
+      gen_server:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
       flowerAsStateMachine(NewStateFlower, MyGardenServerPID)
 
 
@@ -68,12 +69,14 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
         % Check if the The tolerable time for the given problem is less than the time
         % it took the gardener to handle the problem and in this case kill the flower.
           TimeSinceProblem > ToleranceTime ->
-            gardenGenServer:cast(MyGardenServerPID, {kill, Flower#{status = kill}});
+            gen_server:cast(MyGardenServerPID, {kill, Flower#{status = kill}});
 
         % Otherwise the gardener still has not addressed the problem and we are increment
         % the counter of time by 1.
           true ->
-            flowerAsStateMachine(Flower#{timeSinceProblem = TimeSinceProblem + 1},  MyGardenServerPID)
+            NewStateFlower = newFlower(ID, Type, Status, TimeSinceProblem + 1, GardenerID, GardenID, X, Y),
+            gen_server:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
+            flowerAsStateMachine(NewStateFlower,  MyGardenServerPID)
         end
     end
   end.

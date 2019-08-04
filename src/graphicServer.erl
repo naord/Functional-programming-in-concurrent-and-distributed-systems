@@ -15,16 +15,16 @@
 -include_lib("wx/include/wx.hrl").
 
 -include("globalVariables.hrl").
-
+%%-record(wx,{event = close}).
 %% API
 -export([start_link/0]).
 
 -export([ start/0,
   init/1,
   handle_info/2,
-  handle_call/1,
+  handle_call/3,
   handle_cast/2,
-  terminate/0,
+  terminate/2,
   handle_event/2,
   drawing_timer/1]).
 
@@ -37,8 +37,8 @@ init([WxObject]) ->
   initializeGraphicWindow(WxObject).
 
 
-handle_call(state) ->
-  get(my_state).
+handle_call(Request, From, NewState) ->
+  {reply, ok, NewState}.
 
 
 handle_cast({update, #flower{id = _, type = Type, status = Status, gardenerID = _, x = X, y = Y}}, NewState) ->
@@ -60,17 +60,16 @@ handle_cast({makeSteps, {OldX, OldY, #gardener{id = _, type = Type, state = _, l
   makeSteps(Type, OldX, OldY, {X, Y}),
   {noreply, NewState}.
 
-handle_call({recovery, {FlowerInGardenID, GardenerInGardenID}}, NewState)->ok.
+handle_event(Wx, State) ->
+  {stop, normal, State}.
 
-
-handle_info(_Info, NewState) ->
+handle_info(Msg, NewState) ->
+  io:format("~p~n", [Msg]),
   {noreply, NewState}.
 
 
+terminate(Reason, NewState) -> ok.
 
-handle_event(A,B)-> ok.
-
-terminate() -> ok.
 
 start_link()-> ok.
 
@@ -84,6 +83,7 @@ initializeGraphicWindow(Wx)->
   % Create enter window with grass img background - on a GardenFrame.
   wxWindow:setSize(GardenFrame, 0, 0, ?screen_width, ?screen_height),
   wxFrame:show(GardenFrame),
+  wxFrame:connect(GardenFrame, enter_window),
   wxFrame:connect(GardenFrame, enter_window),
 
   % Upload background images.
@@ -161,17 +161,18 @@ initializeGraphicWindow(Wx)->
       "Number of Gardener:  " ++ integer_to_list(3) ++ "    " ++
       "Connected servers:  " ++ integer_to_list(2)),
 
-
-
-
-  put(my_state, #graphic_server{
+  GraphicServer = #graphic_server{
     objectsMatrix  = MatrixObjectsPosition,
     gardenFrame    = GardenFrame,
     gardenPainter  = GardenPainter,
     numOfServers   = 0,
     numberOfFlower = 0,
     allImages      = AllImages,
-    lawnImgs       = BackgroundImgs}).
+    lawnImgs       = BackgroundImgs},
+  put(my_state, GraphicServer),
+
+  {ok, GraphicServer}.
+
 %%
 %%A=updateObjectStatusInObjectsMatrix(480, 480, red_r_pests_green, MatrixObjectsPosition),
 %%B=updateObjectStatusInObjectsMatrix(800, 320, iris_r_normal, A),
