@@ -21,9 +21,8 @@
 
 -export([ start/0,
   init/1,
-  handle_info/2,
+  handle_info/3,
   handle_call/1,
-  handle_cast/4,
   handle_cast/2,
   terminate/0,
   handle_event/2,
@@ -42,21 +41,30 @@ handle_call(state) ->
   get(my_state).
 
 
-handle_cast(update, #flower{id = _, type = Type, status = Status, gardenerID = _, x = X, y = Y}) ->
-  updateFlowerStatus(Type, Status, {X, Y});
-
-handle_cast(newFlower, #flower{id = _, type = Type, status = _, gardenerID = _, x = X, y = Y}) ->
-  drawNewFLower(Type , X, Y);
-
-handle_cast(rest, #gardener{id = _, type = Type, state = _, location = {X, Y}}) ->
-  sitDownTheGardener(Type, X, Y).
-
-handle_cast(makeSteps, NewX, NewY, #gardener{id = _, type = Type, state = _, location = {X, Y}}) ->
-  makeSteps(Type, NewX, NewY, {X, Y}).
+handle_cast({update, #flower{id = _, type = Type, status = Status, gardenerID = _, x = X, y = Y}}, NewState) ->
+  updateFlowerStatus(Type, Status, {X, Y}),
+  {noreply, NewState};
 
 
-handle_info(_Info, State) ->
-  {noreply, State}.
+handle_cast({newFlower, #flower{id = _, type = Type, status = _, gardenerID = _, x = X, y = Y}}, NewState) ->
+  drawNewFLower(Type , X, Y),
+  {noreply, NewState};
+
+
+handle_cast({rest, #gardener{id = _, type = Type, state = _, location = {X, Y}}}, NewState) ->
+  sitDownTheGardener(Type, X, Y),
+  {noreply, NewState};
+
+
+handle_cast({makeSteps, {OldX, OldY, #gardener{id = _, type = Type, state = _, location = {X, Y}}}}, NewState) ->
+  makeSteps(Type, OldX, OldY, {X, Y}),
+  {noreply, NewState}.
+
+
+
+handle_info(_Info, State, NewState) ->
+  {noreply, NewState}.
+
 
 
 handle_event(A,B)-> ok.
@@ -238,30 +246,30 @@ drawNewFLower(Type , X, Y)->
   put(my_state, MyState#graphic_server{numberOfFlower = NewNumberOfFLowers, objectsMatrix = NewObjectsMatrix}).
 
 
-makeSteps(Type, NewX, NewY, {X, Y})->
+makeSteps(Type, OldX, OldY, {NewX, NewY})->
   MyState        = get(my_state),
   WxDC           = MyState#graphic_server.gardenPainter,
   AllImages      = MyState#graphic_server.allImages,
-  PrevObjectInXY = maps:get({X, Y}, MyState#graphic_server.objectsMatrix),
+  PrevObjectInXY = maps:get({OldX, OldY}, MyState#graphic_server.objectsMatrix),
   if
-    NewX < X ->
-      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"), AllImages), {X, Y}),
+    NewX < OldX ->
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"), AllImages), {OldX, OldY}),
       timer:sleep(?delay_between_rect),
-      wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {X, Y}),
+      wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {OldX, OldY}),
       wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_first"), AllImages), {NewX, NewY}),
       timer:sleep(?delay_within_rect),
       wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"),AllImages), {NewX, NewY});
 
-    NewX =:= X ->
-      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"), AllImages), {X, Y}),
+    NewX =:= OldX ->
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_second"), AllImages), {OldX, OldY}),
       timer:sleep(?delay_between_rect),
-      wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {X, Y}),
+      wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {OldX, OldY}),
       wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_left_first"), AllImages), {NewX, NewY});
 
-    NewX > X ->
-      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {X, Y}),
+    NewX > OldX ->
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {OldX, OldY}),
       timer:sleep(?delay_between_rect),
-      wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {X, Y}),
+      wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {OldX, OldY}),
       wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_first"), AllImages), {NewX, NewY}),
       timer:sleep(?delay_within_rect),
       wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {NewX, NewY})

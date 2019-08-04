@@ -9,6 +9,8 @@
 -module(masterServer).
 -author("nirkov").
 
+-export([init/0, handle_cast/2, handle_call/2, recovery/2]).
+
 %% API
 -behaviour(gen_server).
 -include("globalVariables.hrl").
@@ -26,32 +28,64 @@ init()->
   put(graphic4, {global, ?graphic4Name}).
 
 
-handle_cast({updateFlowerStatus, Flower}, State) ->
+handle_cast({updateFlowerStatus, Flower}, NewState) ->
   % Draw the updated status flower in graphicServer of this garden
-  gen_server:cast(get(Flower#flower.gardenID), {update, Flower}),
+  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}, NewState),
 
   % Update the database.
-  databaseUtils:update_flower(Flower),
-  {noreply, State};
+  databaseUtils:updateFlowerRecord(Flower),
+  {noreply, NewState};
 
-handle_cast({deleteFlower, Flower}, State) ->
+handle_cast({deleteFlower, Flower}, NewState) ->
   % Delete the flower from the map in specific graphicServer.
-  gen_server:cast(get(Flower#flower.gardenID), {update, Flower}),
+  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}, NewState),
 
   % Delete the flower from the database.
-  databaseUtils:update_flower(Flower#flower.id),
-  {noreply, State}.
+  databaseUtils:deleteFlower(Flower#flower.id),
+  {noreply, NewState};
 
-יhandle_cast({changeGardenerLocation, Gardener}, State)->
+handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
+  % Send to specific graphic server to move the gardener.
+  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {makeSteps, {OldX, OldY, Gardener}}, NewState),
 
-  {noreply, State}.
+  % Update the database.
+  databaseUtils:updateGardenerRecord(Gardener),
+  {noreply, NewState};
+
+handle_cast({gardenerResting, Gardener}, NewState) ->
+  % Send to specific graphic server to sit down the gardener.
+  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {rest, Gardener}, NewState),
+
+  % Update the database.
+  databaseUtils:updateGardenerRecord(Gardener),
+  {noreply, NewState}.
 
 
-handle_call({sortedFlowerList, GardenName}, State)->
+handle_call({sortedFlowerList, GardenName}, NewState)->
   SortedList = databaseUtils:flowerListSortedByDangerousLevel(GardenName),
-  gen_server:cast(get(GardenName), {listFlowerInDanger, SortedList}).
+  gen_server:cast(get(GardenName), {listFlowerInDanger, SortedList}, NewState).
 
 
+recovery(GardenID, NewState)->
+  FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
+  GardenerInGardenID = databaseUtils:listsRecordOfGardenerInGarden(GardenID),
+  SortedFlowerList   = flowerListSortedByDangerousLevel(GardenID),
+
+  % Send obejcts to graphic server to recover
+  gen_server:cast(get(connectUIServerToGarden(GardenID)), {recover, {FlowerInGardenID, GardenerInGardenID}}, NewState),
+
+  % Send the flowers sorted list by dangerous level to garden
+  gen_server:cast(get(GardenID), {recover, SortedFlowerList}, NewState).
+
+
+
+connectUIServerToGarden(GardenID)->
+  case GardenID of
+    garden1 -> graphic1;
+    garden2 -> graphic2;
+    garden3 -> graphic3;
+    garden4 -> graphic4
+end.
 
 
 
