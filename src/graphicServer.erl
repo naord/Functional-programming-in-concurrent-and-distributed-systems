@@ -21,7 +21,7 @@
 
 -export([ start/0,
   init/1,
-  handle_info/3,
+  handle_info/2,
   handle_call/1,
   handle_cast/2,
   terminate/0,
@@ -60,9 +60,10 @@ handle_cast({makeSteps, {OldX, OldY, #gardener{id = _, type = Type, state = _, l
   makeSteps(Type, OldX, OldY, {X, Y}),
   {noreply, NewState}.
 
+handle_call({recovery, {FlowerInGardenID, GardenerInGardenID}}, NewState)->ok.
 
 
-handle_info(_Info, State, NewState) ->
+handle_info(_Info, NewState) ->
   {noreply, NewState}.
 
 
@@ -330,17 +331,28 @@ fillAvailableCoordinateList()->
 updateObjectStatusInObjectsMatrix(X, Y, NewObject, Map)->
   maps:update({X, Y}, NewObject, Map).
 
-drawFromRecovery() ->
+
+drawFromRecovery(FlowerInGarden, GardenerInGarden) ->
   MyState = get(my_state),
-  WxDC = MyState#graphic_server.gardenPainter,
+  erase(my_state),
+  WxDC    = MyState#graphic_server.gardenPainter,
 
-  % Get the map of object and their position as list.
-  ObjectsMatrixAsList = maps:to_list(MyState#graphic_server.objectsMatrix),
+  % Insert number of flower
+  NewNumberOfFLowers = lists:flatlength(FlowerInGarden),
+  put(my_state, MyState#graphic_server{numberOfFlower = NewNumberOfFLowers}),
 
-  % For each coordinate pair we draw the object should be in this square.
-  Fun = fun({{X, Y}, Type}) ->
-    wxDC:drawBitmap(WxDC, maps:get(Type, MyState#graphic_server.allImages), {X, Y}) end,
-  maps:foreach(Fun, ObjectsMatrixAsList).
+  % For each coordinate pair we draw the flower should be in this square.
+  Fun = fun(Flower) ->
+    updateFlowerStatus(Flower#flower.type, Flower#flower.status, {Flower#flower.x, Flower#flower.y}) end,
+  maps:foreach(Fun, FlowerInGarden),
+
+  % For each coordinate pair we draw the gardener should be in this square.
+  Fun = fun(Gardener) ->
+    {X, Y} = Gardener#gardener.location,
+    makeSteps(Gardener#gardener.type, X, Y, {X, Y}) end,
+  maps:foreach(Fun, GardenerInGarden).
+
+
 
 checkCoordinate(X, Y) ->
   if
