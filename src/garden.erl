@@ -88,6 +88,8 @@ handle_cast({changeGardenerGarden,Gardener}, NewState) ->
 
 %From gardener
 handle_cast({gardenerResting,Gardener}, NewState) ->
+  io:fwrite("garden: gardenerResting: Gardener = ~p ~n",[Gardener]),
+
   gen_server:cast(get(server),{gardenerResting,Gardener}),
   {noreply, NewState};
 
@@ -112,7 +114,7 @@ sendGardenerToFlower(Gardener, Flower) ->
   FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 createFlowers() ->
-  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 160, y = 160 },
+  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 880, y = 400 },
   io:fwrite("createFlower ,Flower~p ~n",[Flower]),
   gen_server:cast({global,?masterServerName},{newFlower,Flower}),
   timer:sleep(3000),

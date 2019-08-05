@@ -61,7 +61,7 @@ handle_cast({walkToFlower, FlowerId, GardenNumber, {DestX,DestY}}, State) ->
        {MyX, MyY} = State#gardener.location,
        Dest = calcNewDest(GardenNumber, DestX, DestY, MyX),% need to get near the flower.
        io:fwrite("walkToFlower: Location = ~p, Dest1 = ~p newDest = ~p ~n",[{MyX, MyY},{DestX,DestY},Dest]),%TODO for debug
-       gen_server:cast(gardenName(State),{gardenerWalkToFlower, State#gardener{state = walkToFlower, flowerId = FlowerId}}),
+       gen_server:cast({global, garden1},{gardenerWalkToFlower, State#gardener{state = walkToFlower, flowerId = FlowerId}}),
        walking(State#gardener{state = walkToFlower, flowerId = FlowerId}, Dest)
   end;
 
@@ -73,7 +73,7 @@ handle_call(Request,From,State)->
   {Request,From,State}.
 
 rest(State) ->
-  gen_server:cast(gardenName(State),{gardenerResting, State#gardener{state = resting}}),
+  gen_server:cast({global, garden1},{gardenerResting, State#gardener{state = resting}}),
   io:fwrite("rest: State = ~p ~n",[State]),
   {noreply, State}.%TODO for debug
 
@@ -95,10 +95,11 @@ walking(State, {DestX,DestY}) ->
           NewGarden = moveGarden(NewX, State#gardener.gardenNumber),
           if  %for case gardener move to different garden.
             CurrGarden =:= NewGarden -> %stay in the same garden
-              gen_server:cast(gardenName(State),{changeGardenerLocation,{MyX,MyY,State#gardener{location = {NewX,NewY}}}}),
+              io:fwrite("walking to flower888 ~n"),
+              gen_server:cast({global, garden1},{changeGardenerLocation,{MyX,MyY,State#gardener{location = {NewX,NewY}}}}),
               walking(State#gardener{location = {NewX,NewY}}, {DestX,DestY});
             true -> %move to new garden
-              gen_server:cast(gardenName(State),{changeGardenerGarden,{MyX,MyY,State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}}}),
+              gen_server:cast({global, garden1},{changeGardenerGarden,{MyX,MyY,State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}}}),
               walking(State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}, {DestX,DestY})
           end;
         true -> %stop walking
@@ -107,7 +108,7 @@ walking(State, {DestX,DestY}) ->
 %%            walkRandom ->
 %%              walkRandom;%randWalk(State,Sender);
             walkToFlower ->
-              gen_server:cast(gardenName(State),{gardenerHandleFlower,State#gardener{state = handleFlower}}),
+              gen_server:cast({global, garden1},{gardenerHandleFlower,State#gardener{state = handleFlower}}),
               handleFlower(State#gardener{state = handleFlower}, State#gardener.flowerId);
             _->
               io:fwrite("walking: bad state after arriveing. State= ~p ~n",[State]) %TODO for debug
@@ -169,7 +170,7 @@ isArrive(MyX, MyY, DestX, DestY) ->
    ((MyX == DestX) and (MyY == DestY)).
 
 handleFlower(State, FlowerId) ->
-  io:fwrite("handleFlower, State= ~p ~n", [State]),
+  io:fwrite("handleFlower, State= ~p ~p ~n", [State, FlowerId]),
   FlowerId ! handleProblem,
   timer:sleep(?handle),
   rest(State#gardener{state = resting}).

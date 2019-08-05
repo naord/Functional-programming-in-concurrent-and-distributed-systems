@@ -109,6 +109,7 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
 
 handle_cast({gardenerResting, Gardener}, NewState) ->
   % Send to specific graphic server to sit down the gardener.
+  io:fwrite("masterServer: gardenerResting =~p ~n",[Gardener]), %TODO for test
   wx_object:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {rest, Gardener}),
 
   % Update the database.

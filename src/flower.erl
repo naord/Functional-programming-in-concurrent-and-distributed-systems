@@ -95,14 +95,10 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
 
 getGardenName(Number) ->
   case Number of
-    1 ->
-      {global,?garden1Name};
-    2 ->
-      {global,?garden2Name};
-    3 ->
-      {global,?garden3Name};
-    _ ->
-      {global,?garden4Name}
+    1 -> {global,?garden1Name};
+    2 -> {global,?garden2Name};
+    3 -> {global,?garden3Name};
+    4 -> {global,?garden4Name}
   end.
 
 
@@ -115,7 +111,8 @@ getRandomStatus()->
     RandomStatus < 20 -> pests_purple;
     RandomStatus < 30 -> pests_green;
     RandomStatus < 60 -> wilted;
-    RandomStatus < 120 - ?level -> normal
+    RandomStatus < 120 - ?level -> normal;
+    true -> normal
   end.
 
 getTolarableTime(Status)->

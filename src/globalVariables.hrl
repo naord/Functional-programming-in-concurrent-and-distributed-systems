@@ -7,12 +7,12 @@
   numberOfFlower, allImages, lawnImgs}).
 
 % Simulation parameter
--define(level, 60).
+-define(level, 20).
 
 % Constant
 -define(screen_width , 1280).
 -define(screen_height, 880).
--define(delay_within_rect, 500).
+-define(delay_within_rect, 600).
 -define(delay_between_rect, 330).
 -define(maxNumberOfFlower, 10).
 
