@@ -17,7 +17,7 @@ newFlower(ID, Type, Status, TimeSinceProblem, GardenerID, GardenID, X, Y)->
   #flower{id = ID, type = Type, status = Status, timeSinceProblem = TimeSinceProblem, gardenerID = GardenerID, gardenID = GardenID, x = X, y = Y }.
 
 
-flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSinceProblem = TimeSinceProblem, gardenerID = GardenerID, gardenID = GardenID, pointsLifeTime = _, x = X, y = Y })->
+flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSinceProblem = TimeSinceProblem, gardenerID = GardenerID, gardenID = GardenID, x = X, y = Y })->
 
   receive
     updateStatus ->

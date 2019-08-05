@@ -43,7 +43,7 @@ handle_call(Request, From, NewState) ->
   {reply, ok, NewState}.
 
 
-handle_cast({update, #flower{id =_, type = Type, status = Status, timeSinceProblem = _, gardenerID = _, gardenID = _, pointsLifeTime = _, x = X, y = Y}}, NewState) ->
+handle_cast({update, #flower{id =_, type = Type, status = Status, timeSinceProblem = _, gardenerID = _, gardenID = _, x = X, y = Y}}, NewState) ->
   updateFlowerStatus(Type, Status, {X, Y}),
   {noreply, NewState};
 

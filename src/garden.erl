@@ -104,7 +104,7 @@ sendGardenerToFlower(Gardener, Flower) ->
   FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 createFlowers(Number) when Number < ?maxNumberOfFlower ->
-  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, pointsLifeTime = 0, x = Number*80, y = Number*80 },
+  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = Number*80, y = Number*80 },
   io:fwrite("createFlower ,Flower~p ~n",[Flower]),
   gen_server:cast({global,get(server)},{newFlower,Flower}),
   timer:sleep(3000).
