@@ -56,7 +56,8 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
     % Send trigger to himself to change the status if it status is nurmal and
     % do it only one time when the startTimeProblem is 0 (from the handleProblem state).
       (Status =:= normal) and (TimeSinceProblem =:= 0) ->
-        ID ! updateStatus,
+        io:fwrite("flower: after.self()=~p, Folwer = ~p ~n",[self(),Flower]),
+        self() ! updateStatus ,
         flowerAsStateMachine(Flower#flower{timeSinceProblem = -1});
 
       (Status =:= normal) and (TimeSinceProblem =/= 0)->

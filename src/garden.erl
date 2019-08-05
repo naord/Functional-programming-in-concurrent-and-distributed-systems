@@ -104,17 +104,18 @@ sendGardenerToFlower(Gardener, Flower) ->
   FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 createFlowers(Number) when Number < ?maxNumberOfFlower ->
-  %io:fwrite("createFlower ,get(myNumber)=~p ~n",[get(myNumber)]),
-  Flower = #flower{id = (1 * ?screen_width) + Number, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = get(myNumber), x = Number*80, y = Number*80 },
+  Flower = #flower{id = Number+100, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = get(myNumber), x = Number*80, y = Number*80 },
+  io:fwrite("createFlower ,Flower~p ~n",[Flower]),
   register(Number+100, spawn(flower, flowerAsStateMachine, [Flower])),
+  gen_server:cast({global,get(server)},{newFlower,Flower}),
   createFlowers(Number + 1).
 
 getRandomFlower()->
   RandomFlower = getRandomNumber(40),
   if
-    RandomFlower < 10 -> iris_l;
-    RandomFlower < 20 -> iris_r;
-    RandomFlower < 30 -> red_l;
+    RandomFlower < 10 -> iris_l_normal;
+    RandomFlower < 20 -> iris_r_normal;
+    RandomFlower < 30 -> red_l_normal;
     true -> red_r
   end.
 

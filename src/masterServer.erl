@@ -36,6 +36,14 @@ init([GraphicServerPid])->
   databaseUtils:startDatabase(),
   {ok, #state{}}.
 
+handle_cast({newFlower, Flower}, NewState) ->
+  databaseUtils:updateFlowerRecord(Flower),
+
+  % Send to specific graphic server to sit down the gardener.
+  wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{newFlower,Flower}),
+
+  {noreply, NewState};
+
 handle_cast({newGardener, Gardener}, NewState) ->
   databaseUtils:updateGardenerRecord(Gardener),
 
