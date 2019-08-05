@@ -95,10 +95,10 @@ walking(State, {DestX,DestY}) ->
           NewGarden = moveGarden(NewX, State#gardener.gardenNumber),
           if  %for case gardener move to different garden.
             CurrGarden =:= NewGarden -> %stay in the same garden
-              gen_server:cast(gardenName(State),{changeGardenerLocation,State#gardener{location = {NewX,NewY}},MyX,MyY}),
+              gen_server:cast(gardenName(State),{changeGardenerLocation,{MyX,MyY,State#gardener{location = {NewX,NewY}}}}),
               walking(State#gardener{location = {NewX,NewY}}, {DestX,DestY});
             true -> %move to new garden
-              gen_server:cast(gardenName(State),{changeGardenerGarden,State#gardener{location = {NewX,NewY}, gardenNumber = NewGarden},MyX,MyY}),
+              gen_server:cast(gardenName(State),{changeGardenerGarden,{MyX,MyY,State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}}}),
               walking(State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}, {DestX,DestY})
           end;
         true -> %stop walking

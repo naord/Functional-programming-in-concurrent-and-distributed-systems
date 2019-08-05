@@ -38,7 +38,7 @@ init([GraphicServerPid])->
 
 handle_cast({newFlower, Flower}, NewState) ->
   databaseUtils:updateFlowerRecord(Flower),
-
+  io:fwrite("masterServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
   % Send to specific graphic server to sit down the gardener.
   wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{newFlower,Flower}),
 
@@ -52,36 +52,56 @@ handle_cast({newGardener, Gardener}, NewState) ->
 
   {noreply, NewState};
 
-handle_cast({updateFlowerStatus, Flower}, NewState) ->
+handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all status changes?
   % Draw the updated status flower in graphicServer of this garden
-  gen_server:cast(connectUIServerToGarden(Flower#flower.gardenID), {update, Flower}), %TODO need to delete NewState from cast
+  wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{update, Flower}),
 
-  % Update the database.
   databaseUtils:updateFlowerRecord(Flower),
   FlowerStatus = Flower#flower.status,
   if
     FlowerStatus =/= normal ->
       Gardeners = databaseUtils:getRestingGardener(),
       Length =  lists:flatlength(Gardeners),
+      io:fwrite("masterServer: changeFlowerStatus = ~p ~n",[Gardeners]), %TODO for test
       if
         Length > 0 ->
           [Gardener | _] = Gardeners,
-          gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower})
-      end
+          gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower});
+        true ->
+          ok
+      end;
+    true ->
+      ok
   end,
+  {noreply, NewState};
+
+handle_cast({updateFlower, Flower}, NewState) ->
+  % Draw the updated status flower in graphicServer of this garden
+
+  %wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{update, Flower}), %TODO need to delete NewState from cast
+
+  % Update the database.
+  databaseUtils:updateFlowerRecord(Flower),
   {noreply, NewState};
 
 handle_cast({deleteFlower, Flower}, NewState) ->
   % Delete the flower from the map in specific graphicServer.
-  gen_server:cast(connectUIServerToGarden(Flower#flower.gardenID), {update, Flower}),
+  wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID), {update, Flower}),
 
   % Delete the flower from the database.
   databaseUtils:deleteFlower(Flower#flower.id),
   {noreply, NewState};
 
+handle_cast({gardenerWalkToFlower, Gardener}, NewState)->
+  % Update the database.
+  databaseUtils:updateGardenerRecord(Gardener),
+  {noreply, NewState};
+
+
 handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
   % Send to specific graphic server to move the gardener.
-  gen_server:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {makeSteps, {OldX, OldY, Gardener}}),
+  io:fwrite("masterServer: changeGardenerLocation =~p ~p ~p ~n",[OldX,OldY, Gardener]), %TODO for test
+  wx_object:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {makeSteps, {OldX, OldY, Gardener}}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
@@ -89,7 +109,7 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
 
 handle_cast({gardenerResting, Gardener}, NewState) ->
   % Send to specific graphic server to sit down the gardener.
-  gen_server:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {rest, Gardener}),
+  wx_object:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {rest, Gardener}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
@@ -111,7 +131,7 @@ recovery(GardenID)->
 
   % Send obejcts to graphic server to recover
   %TODO: NEED TO INIT THE GRAPHIC SERVER HERE AND HANDLE RECOVERY. SHOULD BE HANDLE_CALL TO GRAPHICSERVER?
-  gen_server:cast(connectUIServerToGarden(GardenID), {recovery, {FlowerInGardenID, GardenerInGardenID}}),
+  wx_object:cast(connectUIServerToGarden(GardenID), {recovery, {FlowerInGardenID, GardenerInGardenID}}),
 
   % Send the flowers sorted list by dangerous level to garden
   gen_server:cast(get(GardenID), {recovery, SortedFlowerList}).

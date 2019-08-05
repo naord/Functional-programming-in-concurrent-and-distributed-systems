@@ -21,40 +21,45 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
 
   receive
     updateStatus ->
+
       % Choosing new mode randomly
       NewStatus = getRandomStatus(),
 
       % Create new record
       NewStateFlower = newFlower(ID, Type, NewStatus, 0, GardenerID, GardenID, X, Y),
+      print("update status", NewStateFlower),
 
       % Send report to the garden about status changing.
-      gen_server:cast(getGardenName(GardenID), {updateFlowerStatus, NewStateFlower}),
+      gen_server:cast(getGardenName(GardenID), {changeFlowerStatus, NewStateFlower}),
 
       flowerAsStateMachine(NewStateFlower);
 
     {setGardenerID, NewGardenerID} ->
       NewStateFlower = newFlower(ID, Type, Status, TimeSinceProblem, NewGardenerID, GardenID, X, Y),
-      gen_server:cast(getGardenName(GardenID), {updateFlowerStatus, NewStateFlower}),
+      print("setGardenerID", NewGardenerID),
+
+      gen_server:cast(getGardenName(GardenID), {updateFlower, NewStateFlower}),
       flowerAsStateMachine(NewStateFlower);
 
 
     handleProblem ->
+      print("flower handle problem", Flower),
       % Time the gardener handle the problem
       timer:sleep(?handle),
+      io:fwrite("flower handle problem"),
 
       % New record flower with normal state.
       NewStateFlower = newFlower(ID, Type, normal, 0, GardenerID, GardenID, X, Y),
 
       % Change the status of the flower in the server to normal.
-      gen_server:cast(getGardenName(GardenID), {updateFlowerStatus, NewStateFlower}),
+      gen_server:cast(getGardenName(GardenID), {changeFlowerStatus, NewStateFlower}),
       flowerAsStateMachine(NewStateFlower);
 
-    _->
-      io:fwrite("flower: nothing"),
-      flowerAsStateMachine(Flower)
+    kill->
+      exit(flowerDie),
+       io:fwrite("flower: nothing")
 
-
-  after 5000 ->
+  after 3000 ->
     if
     % Send trigger to himself to change the status if it status is nurmal and
     % do it only one time when the startTimeProblem is 0 (from the handleProblem state).
@@ -72,13 +77,17 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
         % Check if the The tolerable time for the given problem is less than the time
         % it took the gardener to handle the problem and in this case kill the flower.
           TimeSinceProblem > ToleranceTime ->
-            gen_server:cast(getGardenName(GardenID), {flowerDie, Flower#flower{status = kill}});
+
+            gen_server:cast(getGardenName(GardenID), {flowerDie, Flower#flower{status = kill}}),
+            io:fwrite("flower: kill"),
+            self() ! kill,
+            exit(flowerDie);
 
         % Otherwise the gardener still has not addressed the problem and we are increment
         % the counter of time by 1.
           true ->
             NewStateFlower = newFlower(ID, Type, Status, TimeSinceProblem + 1, GardenerID, GardenID, X, Y),
-            gen_server:cast(getGardenName(GardenID), {updateFlowerStatus, NewStateFlower}),
+            gen_server:cast(getGardenName(GardenID), {updateFlower, NewStateFlower}),
             flowerAsStateMachine(NewStateFlower)
         end
     end

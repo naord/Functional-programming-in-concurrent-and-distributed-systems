@@ -43,29 +43,35 @@ handle_call(Request, From, NewState) ->
   {reply, ok, NewState}.
 
 
-handle_cast({update, #flower{id =_, type = Type, status = Status, timeSinceProblem = _, gardenerID = _, gardenID = _, x = X, y = Y}}, NewState) ->
+handle_cast({update, Flower}, NewState) ->
+  io:fwrite("graphicServer: update: Flower = ~p ~n",[Flower]), %TODO for test
+  Type = Flower#flower.type,
+  Status = Flower#flower.status,
+  X = Flower#flower.x,
+  Y = Flower#flower.y,
   updateFlowerStatus(Type, Status, {X, Y}),
   {noreply, NewState};
 
+handle_cast({makeSteps, {OldX, OldY, Gardener}}, NewState) ->
+  io:fwrite("graphicServer: makeSteps: Gardener = ~p ~n",[Gardener]), %TODO for test
+
+  makeSteps(Gardener#gardener.type, OldX, OldY, Gardener#gardener.location),
+  {noreply, NewState};
 
 handle_cast({newFlower,Flower}, NewState) ->
+  io:fwrite("graphicServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
   Type = Flower#flower.type,
   X = Flower#flower.x,
   Y = Flower#flower.y,
   drawNewFLower(Type , X, Y),
   {noreply, NewState};
 
-
 handle_cast({rest, Gardener}, NewState) ->
   Type = Gardener#gardener.type,
   {X,Y} = Gardener#gardener.location,
   sitDownTheGardener(Type, X, Y),
-  {noreply, NewState};
-
-
-handle_cast({makeSteps, {OldX, OldY, #gardener{id = _, type = Type, state = _, location = {X, Y}, gardenNumber = _ , flowerId = _}}}, NewState) ->
-  makeSteps(Type, OldX, OldY, {X, Y}),
   {noreply, NewState}.
+
 
 handle_event(Wx, State) ->
   {stop, normal, State}.
@@ -234,10 +240,11 @@ updateFlowerStatus(Type, NewStatus, {X, Y}) ->
     NewStatus =:= normal -> NewFlowerToDraw = Type;
     true               -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ "_" ++ atom_to_list(NewStatus))
   end,
+  io:fwrite("graphicServer: updateFlowerStatus: NewFlowerToDraw = ~p ~n",[NewFlowerToDraw]), %TODO for test
 
   MyState = get(my_state),
   NewMap = updateObjectStatusInObjectsMatrix(X, Y, NewFlowerToDraw, (MyState#graphic_server.objectsMatrix)),
-  wxDC:drawBitmap(MyState#graphic_server.gardenFrame, maps:get(NewFlowerToDraw, MyState#graphic_server.allImages), {X, Y}),
+  wxDC:drawBitmap(MyState#graphic_server.gardenPainter, maps:get(NewFlowerToDraw, MyState#graphic_server.allImages), {X, Y}),
   erase(my_state),
   put(my_state, MyState#graphic_server{objectsMatrix = NewMap}).
 

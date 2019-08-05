@@ -7,7 +7,7 @@
   numberOfFlower, allImages, lawnImgs}).
 
 % Simulation parameter
--define(level, 0).
+-define(level, 60).
 
 % Constant
 -define(screen_width , 1280).

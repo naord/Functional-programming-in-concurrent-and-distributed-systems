@@ -14,7 +14,7 @@
 
 %% API
 -export([test/0, init/1, handle_cast/2, handle_call/3]).
--export([start_link/3,terminate/2,createFlowers/1]).
+-export([start_link/3,terminate/2,createFlowers/0]).
 -record(state, {}).
 
 %TODO check if need more msg from/to flower and main server
@@ -35,13 +35,14 @@ init([MainServerGlobalName,Number]) ->
   put(myNumber, Number),
   io:fwrite("garden: init: Number = ~p ~n",[Number]),
   put(server,{global,MainServerGlobalName}),
+  ets:new(flowers,[set,named_table,public]),
   %TODO Status = gen_server:call(get(server),{connect,node()}),
  % io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
   {ok, #state{}}.
 
 %From MainServer
-handle_cast({addFlower,Number}, NewState) ->
-  createFlowers(Number),
+handle_cast(addFlower, NewState) ->
+  createFlowers(),
   {noreply, NewState};
 
 %From MainServer
@@ -50,13 +51,18 @@ handle_cast({sendGardenerToFlower, Gardener, Flower}, NewState) ->
   {noreply, NewState};
 
 %From Flower
-handle_cast({updateFlowerStatus,Flower}, NewState) -> %TODO one msg to all status changes?
-  gen_server:cast(get(server),{updateFlowerStatus,Flower}),%Send to main server updateFlowerStatus
+handle_cast({updateFlower,Flower}, NewState) -> %TODO one msg to all status changes?
+  gen_server:cast(get(server),{updateFlower,Flower}),%Send to main server updateFlowerStatus
   {noreply, NewState};
+
+handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all status changes?
+  gen_server:cast(get(server),{changeFlowerStatus,Flower}),%Send to main server updateFlowerStatus
+  {noreply, NewState};
+
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) ->
-  gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
+  gen_server:cast(get(server), {deleteFlower, Flower}),%Send to main server delete flower
   {noreply, NewState};
 
 %From Flower
@@ -86,7 +92,9 @@ handle_cast({gardenerResting,Gardener}, NewState) ->
   {noreply, NewState};
 
 %From gardener
-handle_cast({changeGardenerLocation,Gardener,OldX,OldY}, NewState) ->
+handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState) ->
+  io:fwrite("garden: changeGardenerLocation: Gardener = ~p ~n",[Gardener]),
+
   gen_server:cast(get(server),{changeGardenerLocation,{OldX, OldY, Gardener}}),
   {noreply, NewState}.
 
@@ -103,12 +111,12 @@ sendGardenerToFlower(Gardener, Flower) ->
   gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, get(myNumber), FlowerLocation}), %send to gardener
   FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
-createFlowers(Number) when Number < ?maxNumberOfFlower ->
-  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = Number*80, y = Number*80 },
+createFlowers() ->
+  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 160, y = 160 },
   io:fwrite("createFlower ,Flower~p ~n",[Flower]),
-  gen_server:cast({global,get(server)},{newFlower,Flower}),
-  timer:sleep(3000).
-  %register(a, spawn(flower, flowerAsStateMachine, [Flower])).
+  gen_server:cast({global,?masterServerName},{newFlower,Flower}),
+  timer:sleep(3000),
+  register(a, spawn(flower, flowerAsStateMachine, [Flower])).
 
 getRandomFlower()->
   RandomFlower = getRandomNumber(40),

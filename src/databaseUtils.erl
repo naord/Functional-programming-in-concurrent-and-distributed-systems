@@ -19,6 +19,7 @@
   getGardenerWithID/1,
   updateGardenerRecord/1,
   deleteFlower/1,
+  updateFlowerRecord/1,
   deleteGardener/1]).
 
 -include_lib("stdlib/include/qlc.hrl").
@@ -29,7 +30,6 @@
 startDatabase()->
   try
     % Initialize new empty DB.
-    mnesia:delete_table(garden),
     mnesia:delete_table(gardener),
     mnesia:delete_table(flower),
 
@@ -77,10 +77,12 @@ listsRecordOfGardenerInGarden(GardenID)->
 
 getRestingGardener()->
   F = fun() ->
-    Quary = qlc:q([Gardener || Gardener <- mnesia:table(gardener), Gardener#gardener.state =:= resting]),
+    Quary = qlc:q([Gardener || Gardener <- mnesia:table(gardener)]),
     qlc:e(Quary)
       end,
   {atomic, Ans} = mnesia:transaction(F),
+  io:fwrite("database: getRestingGardener = ~p ~n",[Ans]), %TODO for test
+%
   Ans.
 
 %-----------------------------------------
