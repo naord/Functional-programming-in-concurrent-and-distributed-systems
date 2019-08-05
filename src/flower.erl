@@ -17,8 +17,7 @@ newFlower(ID, Type, Status, TimeSinceProblem, GardenerID, GardenID, X, Y)->
   #flower{id = ID, type = Type, status = Status, timeSinceProblem = TimeSinceProblem, gardenerID = GardenerID, gardenID = GardenID, x = X, y = Y }.
 
 
-
-flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSinceProblem = TimeSinceProblem, gardenerID = GardenerID, gardenID = GardenID, x = X, y = Y })->
+flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSinceProblem = TimeSinceProblem, gardenerID = GardenerID, gardenID = GardenID, pointsLifeTime = _, x = X, y = Y })->
 
   receive
     updateStatus ->
@@ -48,7 +47,11 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
 
       % Change the status of the flower in the server to normal.
       gen_server:cast(getGardenName(GardenID), {updateFlowerStatus, NewStateFlower}),
-      flowerAsStateMachine(NewStateFlower)
+      flowerAsStateMachine(NewStateFlower);
+
+    _->
+      io:fwrite("flower: nothing"),
+      flowerAsStateMachine(Flower)
 
 
   after 5000 ->

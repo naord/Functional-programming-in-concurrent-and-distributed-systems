@@ -123,8 +123,8 @@ initializeGraphicWindow(Wx)->
     iris_r_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_r_pests_green), 80, 80)),
     iris_l_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_l_pests_green), 80, 80)),
 
-    iris_r_normal  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_r), 80, 80)),
-    iris_l_normal   => wxBitmap:new(wxImage:scale(wxImage:new(?iris_l), 80, 80)),
+    iris_r  => wxBitmap:new(wxImage:scale(wxImage:new(?iris_r), 80, 80)),
+    iris_l   => wxBitmap:new(wxImage:scale(wxImage:new(?iris_l), 80, 80)),
 
     % red
     red_r_wilted  => wxBitmap:new(wxImage:scale(wxImage:new(?red_r_wilted), 80, 80)),
@@ -139,8 +139,8 @@ initializeGraphicWindow(Wx)->
     red_r_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?red_r_pests_green), 80, 80)),
     red_l_pests_green  => wxBitmap:new(wxImage:scale(wxImage:new(?red_l_pests_green), 80, 80)),
 
-    red_r_normal   => wxBitmap:new(wxImage:scale(wxImage:new(?red_r), 80, 80)),
-    red_l_normal   => wxBitmap:new(wxImage:scale(wxImage:new(?red_l), 80, 80)),
+    red_r   => wxBitmap:new(wxImage:scale(wxImage:new(?red_r), 80, 80)),
+    red_l   => wxBitmap:new(wxImage:scale(wxImage:new(?red_l), 80, 80)),
 
     % upload gardener images - nir and naor images
     nir_left_first    => wxBitmap:new(wxImage:scale(wxImage:new(?nir_left_first), 80, 80)),
@@ -231,7 +231,8 @@ drawing_timer(PID)->
 updateFlowerStatus(Type, NewStatus, {X, Y}) ->
   if
     NewStatus =:= kill -> NewFlowerToDraw = lawn_peice;
-    true               -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ atom_to_list(NewStatus))
+    NewStatus =:= normal -> NewFlowerToDraw = Type;
+    true               -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ "_" ++ atom_to_list(NewStatus))
   end,
 
   MyState = get(my_state),
