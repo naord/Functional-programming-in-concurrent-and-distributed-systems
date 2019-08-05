@@ -30,7 +30,7 @@ init()->
 
 handle_cast({updateFlowerStatus, Flower}, NewState) ->
   % Draw the updated status flower in graphicServer of this garden
-  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}, NewState), %TODO need to delete NewState from cast
+  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}), %TODO need to delete NewState from cast
 
   % Update the database.
   databaseUtils:updateFlowerRecord(Flower),
@@ -38,7 +38,7 @@ handle_cast({updateFlowerStatus, Flower}, NewState) ->
 
 handle_cast({deleteFlower, Flower}, NewState) ->
   % Delete the flower from the map in specific graphicServer.
-  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}, NewState),
+  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}),
 
   % Delete the flower from the database.
   databaseUtils:deleteFlower(Flower#flower.id),
@@ -46,7 +46,7 @@ handle_cast({deleteFlower, Flower}, NewState) ->
 
 handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
   % Send to specific graphic server to move the gardener.
-  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {makeSteps, {OldX, OldY, Gardener}}, NewState),
+  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {makeSteps, {OldX, OldY, Gardener}}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
@@ -54,7 +54,7 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
 
 handle_cast({gardenerResting, Gardener}, NewState) ->
   % Send to specific graphic server to sit down the gardener.
-  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {rest, Gardener}, NewState),
+  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {rest, Gardener}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
@@ -63,19 +63,20 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
 
 handle_call({sortedFlowerList, GardenName}, NewState)->  % TODO : THE SENDER SHOULD SEND HANDLE CALL AND WAIT TO LIST?
   SortedList = databaseUtils:flowerListSortedByDangerousLevel(GardenName),
-  gen_server:cast(get(GardenName), {listFlowerInDanger, SortedList}, NewState).
+  gen_server:cast(get(GardenName), {listFlowerInDanger, SortedList}),
+  {noreply, NewState}.
 
-recovery(GardenID, NewState)->
+recovery(GardenID)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
   GardenerInGardenID = databaseUtils:listsRecordOfGardenerInGarden(GardenID),
   SortedFlowerList   = flowerListSortedByDangerousLevel(GardenID),
 
   % Send obejcts to graphic server to recover
   %TODO: NEED TO INIT THE GRAPHIC SERVER HERE AND HANDLE RECOVERY. SHOULD BE HANDLE_CALL TO GRAPHICSERVER?
-  gen_server:cast(get(connectUIServerToGarden(GardenID)), {recovery, {FlowerInGardenID, GardenerInGardenID}}, NewState),
+  gen_server:cast(get(connectUIServerToGarden(GardenID)), {recovery, {FlowerInGardenID, GardenerInGardenID}}),
 
   % Send the flowers sorted list by dangerous level to garden
-  gen_server:cast(get(GardenID), {recovery, SortedFlowerList}, NewState).
+  gen_server:cast(get(GardenID), {recovery, SortedFlowerList}).
 
 
 
