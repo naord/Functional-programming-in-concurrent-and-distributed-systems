@@ -9,10 +9,14 @@
 -module(masterServer).
 -author("nirkov").
 
--export([init/0, handle_cast/2, recovery/1]).
+-export([start/0, init/0, handle_cast/2, recovery/1]).
 -include("globalVariables.hrl").
 %% API
 -behaviour(gen_server).
+-record(state,{}).
+
+start()->
+  gen_server:start({global, ?masterServerName}, ?MODULE, [], []).
 
 init()->
   put(garden1, {global, ?garden1Name}),
@@ -23,7 +27,9 @@ init()->
   put(graphic1, {global, ?graphic1Name}),
   put(graphic2, {global, ?graphic2Name}),
   put(graphic3, {global, ?graphic3Name}),
-  put(graphic4, {global, ?graphic4Name}).
+  put(graphic4, {global, ?graphic4Name}),
+  databaseUtils:startDatabase(),
+  {ok, #state{}}.
 
 handle_cast({newGardener, Gardener}, NewState) ->
   databaseUtils:updateGardenerRecord(Gardener),

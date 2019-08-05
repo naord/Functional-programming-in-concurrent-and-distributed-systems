@@ -39,7 +39,6 @@ startDatabase()->
     % Create tableS
     mnesia:create_table(gardener ,[{attributes, record_info(fields, gardener)} , {type,set}]),
     mnesia:create_table(flower   ,[{attributes, record_info(fields, flower)}   , {type,set}])
-%%  TODO  mnesia:create_table(garden   ,[{attributes, record_info(fields, garden)}   , {type,set}])
 
   catch
     error :_  -> io:format("FAIL TO INIT MNESIA DATA BASE");
@@ -111,7 +110,7 @@ getAllObjectsOf(MnesiaBlock) ->
 flowerListSortedByDangerousLevel()->
   AllFLowerInDanger =
     fun() ->
-      Quary = qlc:q([Flower || Flower <- mnesia:table(flower), Flower#flower.status =/= normal, Flower#flower.gardenID =:= GardenName]),
+      Quary = qlc:q([Flower || Flower <- mnesia:table(flower), Flower#flower.status =/= normal]),
       qlc:e(Quary)
     end,
   {atomic, AllFLowerInDangerList} = mnesia:transaction(AllFLowerInDanger),
@@ -213,16 +212,16 @@ getTolarableTime(Status)->
 
 
 
-test()->
-  startDatabase(),
-  A = #flower{id = 1, type = a, status = pests_ant, timeSinceProblem = 50,  gardenerID = 1, gardenID = 2, x = 10, y = 10 },
-  updateFlowerRecord(A),
-  updateFlowerRecord(#flower{id = 4, type = a, status = pests_ant, timeSinceProblem = 60,  gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
-  updateFlowerRecord(#flower{id = 3, type = b, status = wilted, timeSinceProblem = 100, gardenerID = 1, gardenID = 2, x = 22, y = 10 }),
-  updateFlowerRecord(#flower{id = 2, type = a, status = wilted, timeSinceProblem = 190, gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
-  L = getFlowerWithID(4),
-
-
-
-  flowerListSortedByDangerousLevel(1), ok.
+%%test()->
+%%  startDatabase(),
+%%  A = #flower{id = 1, type = a, status = pests_ant, timeSinceProblem = 50,  gardenerID = 1, gardenID = 2, x = 10, y = 10 },
+%%  updateFlowerRecord(A),
+%%  updateFlowerRecord(#flower{id = 4, type = a, status = pests_ant, timeSinceProblem = 60,  gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
+%%  updateFlowerRecord(#flower{id = 3, type = b, status = wilted, timeSinceProblem = 100, gardenerID = 1, gardenID = 2, x = 22, y = 10 }),
+%%  updateFlowerRecord(#flower{id = 2, type = a, status = wilted, timeSinceProblem = 190, gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
+%%  L = getFlowerWithID(4),
+%%
+%%
+%%
+%%  flowerListSortedByDangerousLevel(1), ok.
 

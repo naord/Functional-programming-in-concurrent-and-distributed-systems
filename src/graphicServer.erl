@@ -13,7 +13,6 @@
 -behaviour(wx_object).
 -include_lib("stdlib/include/qlc.hrl").
 -include_lib("wx/include/wx.hrl").
-
 -include("globalVariables.hrl").
 %%-record(wx,{event = close}).
 %% API
@@ -27,6 +26,7 @@
   terminate/2,
   handle_event/2,
   drawing_timer/1]).
+
 
 
 start() ->
@@ -169,6 +169,7 @@ initializeGraphicWindow(Wx)->
     numberOfFlower = 0,
     allImages      = AllImages,
     lawnImgs       = BackgroundImgs},
+
   put(my_state, GraphicServer),
 
   {ok, GraphicServer}.

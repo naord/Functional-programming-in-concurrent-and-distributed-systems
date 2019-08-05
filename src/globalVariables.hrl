@@ -16,6 +16,9 @@
 -define(delay_between_rect, 330).
 -define(maxNumberOfFlower, 10).
 
+% Server Names
+-define(masterServerName, masterServer).
+
 -define(garden1Name, garden1).
 -define(garden2Name, garden2).
 -define(garden3Name, garden3).

@@ -33,10 +33,8 @@ start_link(GlobalName, Number, MainServerGlobalName) ->
 init([MainServerGlobalName,Number]) ->
   put(myNumber, Number),
   put(server,{global,MainServerGlobalName}),
-  ets:new(flowers,[set, public, named_table]),
-  ets:new(gardeners,[set, public, named_table]),
-  Status = gen_server:call(get(server),{connect,node()}),
-  io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
+  %TODO Status = gen_server:call(get(server),{connect,node()}),
+ % io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
   {ok, #state{}}.
 
 %From MainServer
@@ -56,14 +54,12 @@ handle_cast({updateFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) ->
-  ets:delete(flowers,Id),%delete from ets %TODO need ets?
   gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
   {noreply, NewState};
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = GardenerId}}, NewState) ->
   gen_server:cast({global,GardenerId},cancelWalk),
-  ets:delete(flowers,Id),%delete from ets %TODO need ets?
   gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
   {noreply, NewState};
 
