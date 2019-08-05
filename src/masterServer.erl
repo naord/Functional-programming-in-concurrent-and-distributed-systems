@@ -27,6 +27,12 @@ init()->
   put(graphic3, {global, ?graphic3Name}),
   put(graphic4, {global, ?graphic4Name}).
 
+handle_cast({newGardener, Gardener}, NewState) ->
+  databaseUtils:updateGardenerRecord(Gardener),
+
+  % Send to specific graphic server to sit down the gardener.
+  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {rest, Gardener}, NewState).
+
 
 handle_cast({updateFlowerStatus, Flower}, NewState) ->
   % Draw the updated status flower in graphicServer of this garden
@@ -34,6 +40,17 @@ handle_cast({updateFlowerStatus, Flower}, NewState) ->
 
   % Update the database.
   databaseUtils:updateFlowerRecord(Flower),
+  FlowerStatus = Flower#flower.status,
+  if
+    FlowerStatus =/= normal ->
+      Gardeners = databaseUtils:getRestingGardener(),
+      Length =  lists:flatlength(Gardeners),
+      if
+        Length > 0 ->
+          [Gardener | _] = Gardeners,
+          gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower})
+      end
+  end,
   {noreply, NewState};
 
 handle_cast({deleteFlower, Flower}, NewState) ->
@@ -58,6 +75,13 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
+  ListFlowerInDanger = databaseUtils:flowerListSortedByDangerousLevel(),
+  Length = lists:flatlength(ListFlowerInDanger),
+  if
+    Length > 0 ->
+      [Flower|_] = ListFlowerInDanger,
+      gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower})
+  end,
   {noreply, NewState}.
 
 
@@ -88,5 +112,11 @@ connectUIServerToGarden(GardenID)->
     garden4 -> graphic4
 end.
 
-
+getGardenName(Number) ->
+  case Number of
+    1 -> {global,?garden1Name};
+    2 -> {global,?garden2Name};
+    3 -> {global,?garden3Name};
+    _ -> {global,?garden4Name}
+  end.
 

@@ -11,6 +11,8 @@
 
 %% API
 -export([startDatabase/0,
+  getRestingGardener/0,
+  flowerListSortedByDangerousLevel/0,
   listsRecordOfFlowerInGarden/1,
   listsRecordOfGardenerInGarden/1,
   getAllObjectsOf/1,
@@ -74,6 +76,14 @@ listsRecordOfGardenerInGarden(GardenID)->
   {atomic, Ans} = mnesia:transaction(F),
   Ans.
 
+getRestingGardener()->
+  F = fun() ->
+    Quary = qlc:q([Gardener || Gardener <- mnesia:table(gardener), Gardener#gardener.state =:= resting]),
+    qlc:e(Quary)
+      end,
+  {atomic, Ans} = mnesia:transaction(F),
+  Ans.
+
 %-----------------------------------------
 % getAllKeysOf-
 
@@ -98,7 +108,7 @@ getAllObjectsOf(MnesiaBlock) ->
 % that the first in the list is the
 % most urgent case.
 %-----------------------------------------
-flowerListSortedByDangerousLevel(GardenName)->
+flowerListSortedByDangerousLevel()->
   AllFLowerInDanger =
     fun() ->
       Quary = qlc:q([Flower || Flower <- mnesia:table(flower), Flower#flower.status =/= normal, Flower#flower.gardenID =:= GardenName]),

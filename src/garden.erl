@@ -14,7 +14,7 @@
 
 %% API
 -export([init/1, handle_cast/2]).
--export([start_link/2,terminate/2]).
+-export([start_link/3,terminate/2,createFlowers/1]).
 -record(state, {}).
 
 %TODO check if need more msg from/to flower and main server
@@ -22,15 +22,16 @@
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
-start_link(GlobalName, MainServerGlobalName) ->
-  gen_server:start_link({global,GlobalName}, ?MODULE, [MainServerGlobalName], []).
+start_link(GlobalName, Number, MainServerGlobalName) ->
+  gen_server:start_link({global,GlobalName}, ?MODULE, [MainServerGlobalName,Number], []).
 
 %%A set or ordered_set table can only have one object associated with each key
 %%When the process terminates, the table is automatically destroyed
 %%Notice that there is no automatic garbage collection for tables
 %% To destroy a table explicitly, use function delete/1.
 %%The table is a set table: one key, one object, no order among objects
-init([MainServerGlobalName]) ->
+init([MainServerGlobalName,Number]) ->
+  put(myNumber, Number),
   put(server,{global,MainServerGlobalName}),
   ets:new(flowers,[set, public, named_table]),
   ets:new(gardeners,[set, public, named_table]),
@@ -44,8 +45,8 @@ handle_cast({addFlower,Flower}, NewState) ->
   {noreply, NewState};
 
 %From MainServer
-handle_cast({sendGardenerToFlower, Gardener, FlowerLocation, FlowerId}, NewState) ->
-  sendGardenerToFlower(Gardener,FlowerLocation,FlowerId),
+handle_cast({sendGardenerToFlower, Gardener, Flower}, NewState) ->
+  sendGardenerToFlower(Gardener, Flower),
   {noreply, NewState};
 
 %From Flower
@@ -95,12 +96,22 @@ terminate(Reason, State) -> %TODO complete
   ok.
 
 % Send msg to gardner and flower
-sendGardenerToFlower(Gardener, FlowerLocation, FlowerId) ->
-  [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
-  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}), %send to gardener
-  FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
+sendGardenerToFlower(Gardener, Flower) ->
+  FlowerId = Flower#flower.id,
+  FlowerLocation = {Flower#flower.x, Flower#flower.y},
+  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, get(myNumber), FlowerLocation}), %send to gardener
+  FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
-addFlower(Flower) ->
-  Pid = self(),
-  FlowerPid = spawn_link(flower,flowerAsStateMachine,[Flower,0,Pid]), %TODO update here & flower file to have the fields
-  ets:insert(flowers, {Flower#flower.id, FlowerPid}).
+createFlowers(Number) when Number < ?maxNumberOfFlower ->
+  Flower = #flower{id = (get(myNumber) * ?screen_width) + Number, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = get(myNumber), x = Number*80, y = Number*80 },
+  register(Number, spawn(flower, flowerAsStateMachine, [Flower])),
+  createFlowers(Number + 1).
+
+getRandomFlower()->
+  RandomFlower = getRandomNumber(40),
+  if
+    RandomFlower < 10 -> iris_l;
+    RandomFlower < 20 -> iris_r;
+    RandomFlower < 30 -> red_l;
+    true -> red_r
+  end.

@@ -2,7 +2,7 @@
 
 % Global Records
 -record(flower,{id, type, status, timeSinceProblem, gardenerID, gardenID, pointsLifeTime, x, y}).
--record(gardener,{id, type, state, location = {0,0}, gardenNumber , flowerId = none}).
+-record(gardener,{id, type, state = resting, location = {0,0}, gardenNumber = 1 , flowerId = none}).
 -record(graphic_server,{objectsMatrix, gardenFrame, gardenPainter, numOfServers,
   numberOfFlower, allImages, lawnImgs}).
 
@@ -14,25 +14,27 @@
 -define(screen_height, 880).
 -define(delay_within_rect, 500).
 -define(delay_between_rect, 330).
--define(handle, 10).
--define(squareSize,80).
+-define(maxNumberOfFlower, 10).
 
--define(garden1Name,garden1).
--define(garden2Name,garden2).
--define(garden3Name,garden3).
--define(garden4Name,garden4).
+-define(garden1Name, garden1).
+-define(garden2Name, garden2).
+-define(garden3Name, garden3).
+-define(garden4Name, garden4).
 
--define(graphic1Name,graphic1).
--define(graphic2Name,graphic2).
--define(graphic3Name,graphic3).
--define(graphic4Name,graphic4).
+-define(graphic1Name, graphic1).
+-define(graphic2Name, graphic2).
+-define(graphic3Name, graphic3).
+-define(graphic4Name, graphic4).
 
+-define(pestsTime, 20000).
+-define(waterTime, 20000).
 
 % Global Variables
 
-% Problem tolarable time
--define(pestsTime, 100).
--define(waterTime, 100).
+-define(handle, 5000).
+-define(squareSize,80).
+-define(walkTime, 10).
+-define(gardenSize, 1000).
 
 % Images paths
 -define(imagesPath,  "/home/nirkov/Desktop/TheNightmareGarden/TheNightmareGarden/pics").
