@@ -23,6 +23,7 @@
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
 start_link(GlobalName, Number, MainServerGlobalName) ->
+  io:fwrite("garden: start_link: Number = ~p ~n",[Number]),
   gen_server:start_link({global,GlobalName}, ?MODULE, [MainServerGlobalName,Number], []).
 
 %%A set or ordered_set table can only have one object associated with each key
@@ -32,6 +33,7 @@ start_link(GlobalName, Number, MainServerGlobalName) ->
 %%The table is a set table: one key, one object, no order among objects
 init([MainServerGlobalName,Number]) ->
   put(myNumber, Number),
+  io:fwrite("garden: init: Number = ~p ~n",[Number]),
   put(server,{global,MainServerGlobalName}),
   %TODO Status = gen_server:call(get(server),{connect,node()}),
  % io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
@@ -102,8 +104,9 @@ sendGardenerToFlower(Gardener, Flower) ->
   FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 createFlowers(Number) when Number < ?maxNumberOfFlower ->
-  Flower = #flower{id = (get(myNumber) * ?screen_width) + Number, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = get(myNumber), x = Number*80, y = Number*80 },
-  register(Number, spawn(flower, flowerAsStateMachine, [Flower])),
+  %io:fwrite("createFlower ,get(myNumber)=~p ~n",[get(myNumber)]),
+  Flower = #flower{id = (1 * ?screen_width) + Number, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = get(myNumber), x = Number*80, y = Number*80 },
+  register(Number+100, spawn(flower, flowerAsStateMachine, [Flower])),
   createFlowers(Number + 1).
 
 getRandomFlower()->

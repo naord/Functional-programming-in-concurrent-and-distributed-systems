@@ -51,7 +51,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
       flowerAsStateMachine(NewStateFlower)
 
 
-  after 50 ->
+  after 5000 ->
     if
     % Send trigger to himself to change the status if it status is nurmal and
     % do it only one time when the startTimeProblem is 0 (from the handleProblem state).
