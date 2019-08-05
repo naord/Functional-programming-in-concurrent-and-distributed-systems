@@ -17,9 +17,9 @@
 
 %%-record(wx,{event = close}).
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
--export([ start/1,
+-export([ start/0,
   init/1,
   handle_info/2,
   handle_call/3,
@@ -28,10 +28,12 @@
   handle_event/2,
   drawing_timer/1]).
 
+start_link(GraphicServerName) ->
+  gen_server:start_link({global, GraphicServerName}, ?MODULE, [], []).
 
-
-start(GraphicServerName) ->
-  wx_object:start({global, GraphicServerName}, ?MODULE, [wx:new()], []).
+start() ->
+  Wx=wx:new(),
+  wx_object:start(?MODULE, [Wx], []).
 
 
 init([WxObject]) ->
@@ -46,12 +48,17 @@ handle_cast({update, #flower{id =_, type = Type, status = Status, timeSinceProbl
   {noreply, NewState};
 
 
-handle_cast({newFlower,#flower{id =_, type = Type, status = _, timeSinceProblem = _, gardenerID = _, gardenID = _, pointsLifeTime = _, x = X, y = Y}}, NewState) ->
+handle_cast({newFlower,Flower}, NewState) ->
+  Type = Flower#flower.type,
+  X = Flower#flower.x,
+  Y = Flower#flower.y,
   drawNewFLower(Type , X, Y),
   {noreply, NewState};
 
 
-handle_cast({rest, #gardener{id = _, type = Type, state = _, location = {X, Y}, gardenNumber = _ , flowerId = _}}, NewState) ->
+handle_cast({rest, Gardener}, NewState) ->
+  Type = Gardener#gardener.type,
+  {X,Y} = Gardener#gardener.location,
   sitDownTheGardener(Type, X, Y),
   {noreply, NewState};
 
@@ -239,7 +246,7 @@ drawNewFLower(Type , X, Y)->
   erase(my_state),
 
   % Draw new random flower.
-  wxDC:drawBitmap(MyState#graphic_server.gardenFrame, Type, MyState#graphic_server.allImages, {X, Y}),
+  wxDC:drawBitmap(MyState#graphic_server.gardenPainter,  maps:get(Type, MyState#graphic_server.allImages), {X, Y}),
 
   % Update the state record about the new number of the flowers and save in upon the previous record.
   NewNumberOfFLowers = MyState#graphic_server.numberOfFlower + 1,

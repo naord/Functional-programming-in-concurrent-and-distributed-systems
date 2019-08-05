@@ -13,7 +13,7 @@
 -include("globalVariables.hrl").
 
 %% API
--export([init/1, start_link/3, handle_cast/2, handle_call/3]).
+-export([init/1, start_link/2, handle_cast/2, handle_call/3]).
 -export([test/0]). %TODO for test
 
 %%----------------------------------------------------
@@ -33,11 +33,11 @@
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
-start_link(GlobalName, Type, MainServerGlobalName) ->
-  gen_server:start_link({global,GlobalName}, ?MODULE, [GlobalName, Type, MainServerGlobalName], []).
+start_link(GlobalName, Type) ->
+  gen_server:start_link({global,GlobalName}, ?MODULE, [GlobalName, Type], []).
 
-init([GlobalName, Type, MainServerGlobalName]) ->
-  put(server,{global,MainServerGlobalName}),
+init([GlobalName, Type]) ->
+  put(server,{global,?masterServerName}),
   put(1,{global,?garden1Name}),
   put(2,{global,?garden2Name}),
   put(3,{global,?garden3Name}),
@@ -45,7 +45,6 @@ init([GlobalName, Type, MainServerGlobalName]) ->
   %TODO Status = gen_server:call(get(server),{connect,node()}),
   Gardener = #gardener{id = GlobalName, type = Type}, %TODO ask nir about starting garden
   gen_server:cast(get(server),{newGardener,Gardener}),
-  io:fwrite("gardener: init: Gardener = ~p ~n",[Gardener]), %TODO for test
   {ok, Gardener}.
 
 %for case flower die while gardner on his way.

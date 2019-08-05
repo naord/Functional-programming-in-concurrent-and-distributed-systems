@@ -1,7 +1,7 @@
 -author("nir").
 
 % Global Records
--record(flower,{id, type, status, timeSinceProblem, gardenerID, gardenID, pointsLifeTime, x, y}).
+-record(flower,{id, type, status, timeSinceProblem = 0, gardenerID, gardenID, pointsLifeTime = 0, x, y}).
 -record(gardener,{id, type, state = resting, location = {0,0}, gardenNumber = 1 , flowerId = none}).
 -record(graphic_server,{objectsMatrix, gardenFrame, gardenPainter, numOfServers,
   numberOfFlower, allImages, lawnImgs}).
@@ -40,7 +40,7 @@
 -define(gardenSize, 1000).
 
 % Images paths
--define(imagesPath,  "/home/nirkov/Desktop/TheNightmareGarden/TheNightmareGarden/pics").
+-define(imagesPath,  "../pics").
 -define(irisPath    , ?imagesPath ++ "/iris").
 -define(redPath     , ?imagesPath ++ "/red").
 -define(lawnPath    , ?imagesPath ++ "/Lawn").
