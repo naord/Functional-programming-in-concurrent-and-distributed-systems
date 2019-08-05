@@ -14,6 +14,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 -include_lib("wx/include/wx.hrl").
 -include("globalVariables.hrl").
+
 %%-record(wx,{event = close}).
 %% API
 -export([start_link/0]).
@@ -35,7 +36,6 @@ start(GraphicServerName) ->
 
 init([WxObject]) ->
   initializeGraphicWindow(WxObject).
-
 
 handle_call(Request, From, NewState) ->
   {reply, ok, NewState}.
@@ -172,7 +172,7 @@ initializeGraphicWindow(Wx)->
 
   put(my_state, GraphicServer),
 
-  {ok, GraphicServer}.
+  {GardenFrame, GraphicServer}.
 
 %%
 %%A=updateObjectStatusInObjectsMatrix(480, 480, red_r_pests_green, MatrixObjectsPosition),
