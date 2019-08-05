@@ -13,7 +13,7 @@
 -include("globalVariables.hrl").
 
 %% API
--export([init/1, handle_cast/2]).
+-export([init/1, handle_cast/2, handle_call/3]).
 -export([start_link/3,terminate/2,createFlowers/1]).
 -record(state, {}).
 
@@ -40,8 +40,8 @@ init([MainServerGlobalName,Number]) ->
   {ok, #state{}}.
 
 %From MainServer
-handle_cast({addFlower,Flower}, NewState) ->
-  addFlower(Flower),
+handle_cast({addFlower,Number}, NewState) ->
+  createFlowers(Number),
   {noreply, NewState};
 
 %From MainServer
@@ -92,6 +92,9 @@ handle_cast({changeGardenerLocation,Gardener,OldX,OldY}, NewState) ->
   gen_server:cast(get(server),{changeGardenerLocation,{OldX, OldY, Gardener}}),
   {noreply, NewState}.
 
+handle_call(Request,From,State)->
+  unimplemented.
+
 terminate(Reason, State) -> %TODO complete
   ok.
 
@@ -115,3 +118,8 @@ getRandomFlower()->
     RandomFlower < 30 -> red_l;
     true -> red_r
   end.
+
+getRandomNumber(Gap)->
+  {T1,T2,T3} = now(),
+  random:seed(T1, T2, T3),
+  random:uniform(Gap).
