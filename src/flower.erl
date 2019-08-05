@@ -29,8 +29,8 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
       % Create new record
       NewStateFlower = newFlower(ID, Type, NewStatus, 0, GardenerID, GardenID, X, Y),
 
-      % Send report to the server about status changing.
-      gen_server:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}),
+      % Send report to the garden about status changing.
+      gen_server:cast(MyGardenServerPID, {updateFlowerStatus, NewStateFlower}), %TODO need {global,<garden_name>}?
 
       flowerAsStateMachine(NewStateFlower, MyGardenServerPID);
 
@@ -69,7 +69,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
         % Check if the The tolerable time for the given problem is less than the time
         % it took the gardener to handle the problem and in this case kill the flower.
           TimeSinceProblem > ToleranceTime ->
-            gen_server:cast(MyGardenServerPID, {kill, Flower#{status = kill}});
+            gen_server:cast(MyGardenServerPID, {flowerDie, Flower#{status = kill}});
 
         % Otherwise the gardener still has not addressed the problem and we are increment
         % the counter of time by 1.
@@ -80,7 +80,6 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
         end
     end
   end.
-
 
 getTolarableTime(Status)->
   case Status of

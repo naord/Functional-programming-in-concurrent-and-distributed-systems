@@ -13,7 +13,7 @@
 -include("globalVariables.hrl").
 
 %% API
--export([init/1, handle_cast/2, handle_call/3]).
+-export([init/1, handle_cast/2]).
 -export([start_link/3,newGardener/4, isArrive/4]).
 
 %%----------------------------------------------------
@@ -54,7 +54,7 @@ init([GlobalName, Type, MainServerGlobalName]) ->
   put(3,{global,?garden3Name}),
   put(4,{global,?garden4Name}),
   Status = gen_server:call(get(server),{connect,node()}),
-  #gardener{id = GlobalName, type = Type , gardenNumber = 1},
+  #gardener{id = GlobalName, type = Type , gardenNumber = 1}, %TODO ask nir about starting garden
   io:fwrite("gardener: init: Status = ~p ~n",[Status]), %TODO for test
   {ok, #gardener{}}.
 
@@ -62,8 +62,9 @@ init([GlobalName, Type, MainServerGlobalName]) ->
 handle_cast(cancelWalk, State) ->
   rest(State#gardener{state = resting});
 
+%handle flower request.
 handle_cast({walkToFlower, FlowerId, {DestX,DestY}}, State) ->
-  InputCheck = abs((DestX rem 80) + (DestY rem 80)) == 0,
+  InputCheck = abs((DestX rem 80) + (DestY rem 80)) == 0, %TODO delete?
   case InputCheck of
      false ->
        io:fwrite("Wrong input to handle_cast(walkToFlower), input ={~p,~p} ~n",[DestX, DestY]);
@@ -83,10 +84,10 @@ rest(State) ->
   gen_server:cast(gardenName(State),{gardenerResting, State#gardener{state = resting}}),
   io:fwrite("rest: State = ~p ~n",[State]).
 
-%TODO add check for changing garden
+%TODO need to walk to the flower or near?
 walking(State, FlowerId, {DestX,DestY}, {StepX,StepY}) ->
-  CancelWalk = isCanceledWalk(State), %for case flower die while gardner on his way.
-  case CancelWalk of
+  CancelWalk = isCanceledWalk(State),
+  case CancelWalk of %for case flower die while gardner on his way.
     true -> %need to stop
       io:fwrite("Stopped walking: State= ~p ~n",[State]);
     false -> %keep walking
@@ -100,12 +101,12 @@ walking(State, FlowerId, {DestX,DestY}, {StepX,StepY}) ->
           NewY = updateLocation(MyY, DestY),
           CurrGarden = State#gardener.gardenNumber,
           NewGarden = moveGarden(NewX, State#gardener.gardenNumber),
-          if
-            CurrGarden =:= NewGarden -> %move in the same garden
-              gen_server:cast(gardenName(State),{changeGardenerLocation,State#gardener{location = {NewX,NewY}}),
+          if  %for case gardener move to different garden.
+            CurrGarden =:= NewGarden -> %stay in the same garden
+              gen_server:cast(gardenName(State),{changeGardenerLocation,State#gardener{location = {NewX,NewY}},MyX,MyY}),
               walking(State#gardener{location = {NewX,NewY}}, FlowerId, {DestX,DestY}, {StepX,StepY});
             true -> %move to new garden
-              gen_server:cast(gardenName(State),{changeGardenerGarden,State#gardener{location = {NewX,NewY}, gardenNumber = NewGarden}}),
+              gen_server:cast(gardenName(State),{changeGardenerGarden,State#gardener{location = {NewX,NewY}, gardenNumber = NewGarden},MyX,MyY}),
               walking(State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}, FlowerId, {DestX,DestY}, {StepX,StepY})
           end;
         true -> %stop walking
@@ -136,7 +137,6 @@ moveGarden(NewX, GardenNumber) ->
     true ->
       GardenNumber
   end.
-
 
 isCanceledWalk(State) ->
   Status = State#gardener.state,
@@ -177,12 +177,12 @@ calculateProgress({MyX,MyY},{DestX,DestY}) ->
   io:fwrite("calculateProgress: Steps = ~p ~n",[Steps]),
   Steps.
 
-checkCoordinate(X, Y) ->
-  if
-    (((X >= 0) and (X =< 1280)) and ((X >= 0) and (X =< 880)))
-      and ((X rem 80 =:= 0) and (Y rem 80 =:= 0))-> ok;
-    true -> error
-  end.
+%%checkCoordinate(X, Y) ->
+%%  if
+%%    (((X >= 0) and (X =< 1280)) and ((X >= 0) and (X =< 880)))
+%%      and ((X rem 80 =:= 0) and (Y rem 80 =:= 0))-> ok;
+%%    true -> error
+%%  end.
 
 %%handle_cast(walkRandom, State, Flower) -> %%TODO implement.
 %%  io:fwrite("walkRandom ~n").
@@ -288,13 +288,4 @@ checkCoordinate(X, Y) ->
 %%          io:fwrite("error gardener state")
 %%    end
 %%  end.
-%%
-%%
-%%
-%%
-%%
-%%handle_cast(Request, State) ->
-%%  erlang:error(not_implemented).
-handle_call(Request, From, State) ->
-  erlang:error(not_implemented).
 

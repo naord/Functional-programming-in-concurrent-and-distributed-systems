@@ -30,7 +30,7 @@ init()->
 
 handle_cast({updateFlowerStatus, Flower}, NewState) ->
   % Draw the updated status flower in graphicServer of this garden
-  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}, NewState),
+  gen_server:cast(get(connectUIServerToGarden(Flower#flower.gardenID)), {update, Flower}, NewState), %TODO need to delete NewState from cast
 
   % Update the database.
   databaseUtils:updateFlowerRecord(Flower),
@@ -81,7 +81,7 @@ recovery(GardenID, NewState)->
 
 connectUIServerToGarden(GardenID)->
   case GardenID of
-    garden1 -> graphic1;
+    garden1 -> graphic1; %TODO need to be {global,graphic1}
     garden2 -> graphic2;
     garden3 -> graphic3;
     garden4 -> graphic4

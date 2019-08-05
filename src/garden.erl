@@ -18,6 +18,7 @@
 -record(state, {}).
 
 %TODO check if need more msg from/to flower and main server
+%TODO who create the flowers? 
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
@@ -48,21 +49,21 @@ handle_cast({sendGardenerToFlower, Gardener, FlowerLocation, FlowerId}, NewState
   {noreply, NewState};
 
 %From Flower
-handle_cast({updateFlowerStatus,Flower}, NewState) -> %TODO change in flower module
-  gen_server:cast(get(server),{updateFlowerStatus,Flower}, NewState),%Send to main server updateFlowerStatus
+handle_cast({updateFlowerStatus,Flower}, NewState) -> %TODO one msg to all status changes?
+  gen_server:cast(get(server),{updateFlowerStatus,Flower}),%Send to main server updateFlowerStatus
   {noreply, NewState};
 
 %From Flower
-handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) -> %TODO flower need owner in case garden on his way.
-  ets:delete(flowers,Id),%delete from ets
-  gen_server:cast(get(server), {deleteFlower,Id}),%Send to main server delete flower
+handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) ->
+  ets:delete(flowers,Id),%delete from ets %TODO need ets?
+  gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
   {noreply, NewState};
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = GardenerId}}, NewState) ->
   gen_server:cast({global,GardenerId},cancelWalk),
-  ets:delete(flowers,Id),%delete from ets
-  gen_server:cast(get(server), {deleteFlower,Id}),%Send to main server delete flower
+  ets:delete(flowers,Id),%delete from ets %TODO need ets?
+  gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
   {noreply, NewState};
 
 %From gardener
@@ -86,18 +87,18 @@ handle_cast({gardenerResting,Gardener}, NewState) ->
   {noreply, NewState};
 
 %From gardener
-handle_cast({changeGardenerLocation,Gardener}, NewState) ->
-  gen_server:cast(get(server),{changeGardenerLocation,Gardener}),
+handle_cast({changeGardenerLocation,Gardener,OldX,OldY}, NewState) ->
+  gen_server:cast(get(server),{changeGardenerLocation,{OldX, OldY, Gardener}}),
   {noreply, NewState}.
 
-terminate(Reason, State) ->
+terminate(Reason, State) -> %TODO complete
   ok.
 
 % Send msg to gardner and flower
 sendGardenerToFlower(Gardener, FlowerLocation, FlowerId) ->
   [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
-  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}),
-  FlowerPid ! {gardnerComing,Gardener#gardener.id}. %TODO update flower file to have gardnerComing
+  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerLocation}), %send to gardener
+  FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 addFlower(Flower) ->
   Pid = self(),
