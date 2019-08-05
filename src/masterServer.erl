@@ -81,7 +81,7 @@ recovery(GardenID, NewState)->
 
 connectUIServerToGarden(GardenID)->
   case GardenID of
-    garden1 -> graphic1; %TODO need to be {global,graphic1}
+    garden1 -> graphic1;
     garden2 -> graphic2;
     garden3 -> graphic3;
     garden4 -> graphic4

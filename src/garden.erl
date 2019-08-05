@@ -18,7 +18,7 @@
 -record(state, {}).
 
 %TODO check if need more msg from/to flower and main server
-%TODO who create the flowers? 
+%TODO who create the flowers?
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
