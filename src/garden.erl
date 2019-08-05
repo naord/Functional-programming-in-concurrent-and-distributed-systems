@@ -93,10 +93,10 @@ handle_cast({changeGardenerLocation,Gardener,OldX,OldY}, NewState) ->
   {noreply, NewState}.
 
 handle_call(Request,From,State)->
-  unimplemented.
+  {Request,From,State}.
 
 terminate(Reason, State) -> %TODO complete
-  ok.
+  {Reason, State}.
 
 % Send msg to gardner and flower
 sendGardenerToFlower(Gardener, Flower) ->

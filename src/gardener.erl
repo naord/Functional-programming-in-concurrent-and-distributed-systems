@@ -13,7 +13,7 @@
 -include("globalVariables.hrl").
 
 %% API
--export([init/1, start_link/3, handle_cast/2]).
+-export([init/1, start_link/3, handle_cast/2, handle_call/3]).
 -export([test/0]). %TODO for test
 
 %%----------------------------------------------------
@@ -69,6 +69,9 @@ handle_cast({walkToFlower, FlowerId, GardenNumber, {DestX,DestY}}, State) ->
 handle_cast(Request, State) -> %TODO for debug
   io:fwrite("handle_cast gardener: wrong request. Request = ~p State = ~p ~n",[Request, State]),
   ok.
+
+handle_call(Request,From,State)->
+  {Request,From,State}.
 
 rest(State) ->
   gen_server:cast(gardenName(State),{gardenerResting, State#gardener{state = resting}}),
