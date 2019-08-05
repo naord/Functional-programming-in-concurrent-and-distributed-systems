@@ -18,7 +18,7 @@
 %% API
 -export([start_link/0]).
 
--export([ start/0,
+-export([ start/1,
   init/1,
   handle_info/2,
   handle_call/3,
@@ -29,8 +29,8 @@
 
 
 
-start() ->
-  wx_object:start(?MODULE, [wx:new()], []).
+start(GraphicServerName) ->
+  wx_object:start({global, GraphicServerName}, ?MODULE, [wx:new()], []).
 
 
 init([WxObject]) ->
@@ -41,22 +41,22 @@ handle_call(Request, From, NewState) ->
   {reply, ok, NewState}.
 
 
-handle_cast({update, #flower{id = _, type = Type, status = Status, gardenerID = _, x = X, y = Y}}, NewState) ->
+handle_cast({update, #flower{id =_, type = Type, status = Status, timeSinceProblem = _, gardenerID = _, gardenID = _, pointsLifeTime = _, x = X, y = Y}}, NewState) ->
   updateFlowerStatus(Type, Status, {X, Y}),
   {noreply, NewState};
 
 
-handle_cast({newFlower, #flower{id = _, type = Type, status = _, gardenerID = _, x = X, y = Y}}, NewState) ->
+handle_cast({newFlower,#flower{id =_, type = Type, status = _, timeSinceProblem = _, gardenerID = _, gardenID = _, pointsLifeTime = _, x = X, y = Y}}, NewState) ->
   drawNewFLower(Type , X, Y),
   {noreply, NewState};
 
 
-handle_cast({rest, #gardener{id = _, type = Type, state = _, location = {X, Y}}}, NewState) ->
+handle_cast({rest, #gardener{id = _, type = Type, state = _, location = {X, Y}, gardenNumber = _ , flowerId = _}}, NewState) ->
   sitDownTheGardener(Type, X, Y),
   {noreply, NewState};
 
 
-handle_cast({makeSteps, {OldX, OldY, #gardener{id = _, type = Type, state = _, location = {X, Y}}}}, NewState) ->
+handle_cast({makeSteps, {OldX, OldY, #gardener{id = _, type = Type, state = _, location = {X, Y}, gardenNumber = _ , flowerId = _}}}, NewState) ->
   makeSteps(Type, OldX, OldY, {X, Y}),
   {noreply, NewState}.
 
