@@ -9,12 +9,10 @@
 -module(masterServer).
 -author("nirkov").
 
--export([init/0, handle_cast/2, recovery/2]).
-
+-export([init/0, handle_cast/2, recovery/1]).
+-include("globalVariables.hrl").
 %% API
 -behaviour(gen_server).
--include("globalVariables.hrl").
--include("databaseUtils.erl").
 
 init()->
   put(garden1, {global, ?garden1Name}),
@@ -31,7 +29,7 @@ handle_cast({newGardener, Gardener}, NewState) ->
   databaseUtils:updateGardenerRecord(Gardener),
 
   % Send to specific graphic server to sit down the gardener.
-  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {rest, Gardener}, NewState).
+  gen_server:cast(get(connectUIServerToGarden(Gardener#gardener.gardenNumber)), {rest, Gardener}, NewState);
 
 
 handle_cast({updateFlowerStatus, Flower}, NewState) ->
@@ -89,7 +87,7 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
 recovery(GardenID)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
   GardenerInGardenID = databaseUtils:listsRecordOfGardenerInGarden(GardenID),
-  SortedFlowerList   = flowerListSortedByDangerousLevel(GardenID),
+  SortedFlowerList   = databaseUtils:flowerListSortedByDangerousLevel(),
 
   % Send obejcts to graphic server to recover
   %TODO: NEED TO INIT THE GRAPHIC SERVER HERE AND HANDLE RECOVERY. SHOULD BE HANDLE_CALL TO GRAPHICSERVER?
