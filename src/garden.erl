@@ -13,7 +13,7 @@
 -include("globalVariables.hrl").
 
 %% API
--export([init/1, handle_cast/2, handle_call/3]).
+-export([test/0, init/1, handle_cast/2, handle_call/3]).
 -export([start_link/3,terminate/2,createFlowers/1]).
 -record(state, {}).
 
@@ -119,3 +119,6 @@ getRandomNumber(Gap)->
   {T1,T2,T3} = now(),
   random:seed(T1, T2, T3),
   random:uniform(Gap).
+
+test() ->
+  gen_server:cast({global,garden1},{addFlower,10}).
