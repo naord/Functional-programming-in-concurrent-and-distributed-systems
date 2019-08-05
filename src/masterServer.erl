@@ -28,7 +28,7 @@ init(_)->
   put(graphic2, {global, ?graphic2Name}),
   put(graphic3, {global, ?graphic3Name}),
   put(graphic4, {global, ?graphic4Name}),
-  %databaseUtils:startDatabase(),
+  databaseUtils:startDatabase(),
   {ok, #state{}}.
 
 handle_cast({newGardener, Gardener}, NewState) ->
