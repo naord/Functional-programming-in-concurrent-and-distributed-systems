@@ -9,7 +9,7 @@
 -module(masterServer).
 -author("nirkov").
 
--export([init/0, handle_cast/2, handle_call/2, recovery/2]).
+-export([init/0, handle_cast/2, recovery/2]).
 
 %% API
 -behaviour(gen_server).
@@ -85,10 +85,6 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   {noreply, NewState}.
 
 
-handle_call({sortedFlowerList, GardenName}, NewState)->  % TODO : THE SENDER SHOULD SEND HANDLE CALL AND WAIT TO LIST?
-  SortedList = databaseUtils:flowerListSortedByDangerousLevel(GardenName),
-  gen_server:cast(get(GardenName), {listFlowerInDanger, SortedList}),
-  {noreply, NewState}.
 
 recovery(GardenID)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
