@@ -63,7 +63,7 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
     FlowerStatus =/= normal ->
       Gardeners = databaseUtils:getRestingGardener(),
       Length =  lists:flatlength(Gardeners),
-      io:fwrite("masterServer: changeFlowerStatus = ~p ~n",[Gardeners]), %TODO for test
+      io:fwrite("masterServer: changeFlowerStatus: Gardeners= ~p ~n",[Gardeners]), %TODO for test
       if
         Length > 0 ->
           [Gardener | _] = Gardeners,
@@ -101,7 +101,7 @@ handle_cast({gardenerWalkToFlower, Gardener}, NewState)->
 
 handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
   % Send to specific graphic server to move the gardener.
-  io:fwrite("masterServer: changeGardenerLocation =~p ~p ~p ~n",[OldX,OldY, Gardener]), %TODO for test
+  io:fwrite("masterServer: changeGardenerLocation =~p ~p ~p ~p ~n",[get({Gardener#gardener.gardenNumber,graphic}),OldX,OldY, Gardener]), %TODO for test
   wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}), {makeSteps, {OldX, OldY, Gardener}}),
 
   % Update the database.

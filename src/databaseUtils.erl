@@ -77,13 +77,29 @@ listsRecordOfGardenerInGarden(GardenID)->
 
 getRestingGardener()->
   F = fun() ->
-    Quary = qlc:q([Gardener || Gardener <- mnesia:table(gardener)]),
+    Quary = qlc:q([Gardener || Gardener <- mnesia:table(gardener), Gardener#gardener.state =:= resting]),
     qlc:e(Quary)
       end,
-  {atomic, Ans} = mnesia:transaction(F),
-  io:fwrite("database: getRestingGardener = ~p ~n",[Ans]), %TODO for test
-%
-  Ans.
+  try
+    {_, Ans} = mnesia:transaction(F),
+    io:fwrite("database:  mnesia:transaction(F) = ~p ~n",[ mnesia:transaction(F)]), %TODO for test
+    Ans
+  catch
+     error : _ -> io:format("getRestingGardener failed");
+     exit : _ -> io:format("getRestingGardener failed")
+  end .
+
+
+%%getRestingGardener()->
+%%  Match = #gardener{state = resting, _ = '_'},
+%%  F = fun() -> mnesia:match_object(Match) end,
+%%  try
+%%    {_,Gardeners} = mnesia:transaction(F),
+%%    Gardeners
+%%  catch
+%%     error : _ -> io:format("getRestingGardener failed");
+%%     exit : _ -> io:format("getRestingGardener failed")
+%%  end.
 
 %-----------------------------------------
 % getAllKeysOf-
@@ -138,15 +154,15 @@ flowerListSortedByDangerousLevel()->
 % Return the flower record correspond to
 % FlowerID.
 %-----------------------------------------
-getFlowerWithID(FlowerID) ->
-  F = fun () -> mnesia:read(flower, FlowerID) end,
-  try
-    {_, Ans} = mnesia:transaction(F),
-    Ans
-  catch
-    error :_  -> io:format("ERROR: CAN RETURN FLOWER WITH ID:" ++ FlowerID);
-    exit  :_  ->  io:format("EXIT: CAN RETURN FLOWER WITH ID:" ++ FlowerID)
-  end.
+%%getFlowerWithID(FlowerID) ->
+%%  F = fun () -> mnesia:read(flower, FlowerID) end,
+%%  try
+%%    {_, Ans} = mnesia:transaction(F),
+%%    Ans
+%%  catch
+%%    error :_  -> io:format("ERROR: CAN RETURN FLOWER WITH ID:" ++ FlowerID);
+%%    exit  :_  ->  io:format("EXIT: CAN RETURN FLOWER WITH ID:" ++ FlowerID)
+%%  end.
 
 %-----------------------------------------
 % getGardenerWithID -
@@ -228,4 +244,5 @@ getTolarableTime(Status)->
 %%
 %%
 %%  flowerListSortedByDangerousLevel(1), ok.
+
 

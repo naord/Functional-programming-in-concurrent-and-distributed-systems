@@ -14,8 +14,8 @@
 
 %% API
 -export([test/0, init/1, handle_cast/2, handle_call/3]).
--export([start_link/3,terminate/2,createFlowers/0,createFlowers/1]).
--record(state, {}).
+-export([start_link/3,terminate/2,createFlowers/0,createFlowers/2]).
+-record(state, {number}).
 
 %TODO check if need more msg from/to flower and main server
 %TODO who create the flowers?
@@ -32,22 +32,22 @@ start_link(GlobalName, Number, MainServerGlobalName) ->
 %% To destroy a table explicitly, use function delete/1.
 %%The table is a set table: one key, one object, no order among objects
 init([MainServerGlobalName,Number]) ->
-  put(myNumber, Number),
+  %put(myNumber, Number),
   io:fwrite("garden: init: Number = ~p ~n",[Number]),
   put(server,{global,MainServerGlobalName}),
   ets:new(flowers,[set,named_table,public]),
   %TODO Status = gen_server:call(get(server),{connect,node()}),
  % io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
-  {ok, #state{}}.
+  {ok, #state{number = Number}}.
 
 %From MainServer
 handle_cast(addFlower, NewState) ->
-  createFlowers(60),
+  createFlowers(10,NewState),
   {noreply, NewState};
 
 %From MainServer
 handle_cast({sendGardenerToFlower, Gardener, Flower}, NewState) ->
-  sendGardenerToFlower(Gardener, Flower),
+  sendGardenerToFlower(Gardener, Flower,NewState),
   {noreply, NewState};
 
 %From Flower
@@ -109,11 +109,11 @@ terminate(Reason, State) -> %TODO complete
   {Reason, State}.
 
 % Send msg to gardner and flower
-sendGardenerToFlower(Gardener, Flower) ->
+sendGardenerToFlower(Gardener, Flower,State) ->
   FlowerId = Flower#flower.id,
   FlowerLocation = {Flower#flower.x, Flower#flower.y},
   [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
-  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerPid, get(myNumber), FlowerLocation}), %TODO get(myNumber) %send to gardener
+  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerPid, State#state.number, FlowerLocation}), %TODO get(myNumber) %send to gardener
   FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 getRandomFlower()->
@@ -141,16 +141,17 @@ createFlowers() ->
   ets:insert(flowers, {Flower#flower.id,Pid}).
 
 
-createFlowers(NumberOfFlowers)->
-
+createFlowers(NumberOfFlowers,State)->
+  GardenNumber = State#state.number,
+  io:fwrite("createFlower ,GardenNumber =~p ~n",[GardenNumber]),
   % Range of flower id
-  NumbersList = lists:seq(1 * ?screen_width, (1 * ?screen_width) + NumberOfFlowers),%TODO change 1 to garden number
+  NumbersList = lists:seq(GardenNumber * ?screen_width, (GardenNumber * ?screen_width) + NumberOfFlowers),%TODO change 1 to GardenNumber
 
   % Make them atoms
   RegisterIDs = [intToAtom(Number)|| Number <- NumbersList],
 
   % All aveilable coordinate in garden
-  AvailableCoordinate =[{X * ?squareSize, Y * ?squareSize} || X <- lists:seq(0, 16), Y <- lists:seq(0, 11)],
+  AvailableCoordinate =[{X * ?squareSize, Y * ?squareSize} || X <- lists:seq(0, 16), Y <- lists:seq(0, 5)],
 
   Fun = fun(RegisterID) ->
     % get random coordinate
@@ -162,7 +163,7 @@ createFlowers(NumberOfFlowers)->
 
     % Create flower
     Flower = #flower{id = RegisterID, type = getRandomFlower(), status = normal,
-      timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = X, y = Y }, %TODO change gardenID to garden number
+      timeSinceProblem = 0, gardenerID = none, gardenID = GardenNumber, x = X, y = Y }, %TODO change gardenID to garden number
     gen_server:cast({global, ?masterServerName}, {newFlower, Flower}),
     Pid = spawn(flower, flowerAsStateMachine, [Flower]),
     timer:sleep(100),

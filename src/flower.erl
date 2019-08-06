@@ -64,7 +64,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
     % Send trigger to himself to change the status if it status is nurmal and
     % do it only one time when the startTimeProblem is 0 (from the handleProblem state).
       (Status =:= normal) and (TimeSinceProblem =:= 0) ->
-        io:fwrite("flower: after.self()=~p, Folwer = ~p ~n",[self(),Flower]),
+        %io:fwrite("flower: after.self()=~p, Folwer = ~p ~n",[self(),Flower]),
         self() ! updateStatus ,
         flowerAsStateMachine(Flower#flower{timeSinceProblem = -1});
 
@@ -124,9 +124,9 @@ getTolarableTime(Status)->
   end.
 
 print(Msg, Object)-> io:fwrite(Msg ++ "~p~n", [Object]).
-print(Msg)-> io:fwrite(Msg ++ "~n").
+%print(Msg)-> io:fwrite(Msg ++ "~n").
 
-tests()->ok.
+%tests()->ok.
 %%  print("Start tests"),
 %%  print("Status : ", getRandomStatus()),
 %%  print("Status : ", getRandomStatus()),
