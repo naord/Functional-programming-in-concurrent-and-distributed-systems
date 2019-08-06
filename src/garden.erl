@@ -14,7 +14,7 @@
 
 %% API
 -export([test/0, init/1, handle_cast/2, handle_call/3]).
--export([start_link/3,terminate/2,createFlowers/0]).
+-export([start_link/3,terminate/2,createFlowers/0,createFlowers/1]).
 -record(state, {}).
 
 %TODO check if need more msg from/to flower and main server
@@ -42,7 +42,7 @@ init([MainServerGlobalName,Number]) ->
 
 %From MainServer
 handle_cast(addFlower, NewState) ->
-  createFlowers(),
+  createFlowers(60),
   {noreply, NewState};
 
 %From MainServer
@@ -116,15 +116,6 @@ sendGardenerToFlower(Gardener, Flower) ->
   gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerPid, get(myNumber), FlowerLocation}), %TODO get(myNumber) %send to gardener
   FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
-createFlowers() ->
-  Flower = #flower{id = a, type = getRandomFlower(), status=normal,
-    timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 880, y = 400 },
-  io:fwrite("createFlower ,Flower~p ~n",[Flower]),
-  gen_server:cast({global,?masterServerName},{newFlower,Flower}),
-  %timer:sleep(3000),
-  Pid = spawn(flower, flowerAsStateMachine, [Flower]),
-  ets:insert(flowers, {Flower#flower.id,Pid}).
-
 getRandomFlower()->
   RandomFlower = getRandomNumber(40),
   if
@@ -138,6 +129,50 @@ getRandomNumber(Gap)->
   {T1,T2,T3} = now(),
   random:seed(T1, T2, T3),
   random:uniform(Gap).
+
+
+createFlowers() ->
+  Flower = #flower{id = a, type = getRandomFlower(), status=normal,
+    timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 880, y = 400 },
+  io:fwrite("createFlower ,Flower~p ~n",[Flower]),
+  gen_server:cast({global,?masterServerName},{newFlower,Flower}),
+  %timer:sleep(3000),
+  Pid = spawn(flower, flowerAsStateMachine, [Flower]),
+  ets:insert(flowers, {Flower#flower.id,Pid}).
+
+
+createFlowers(NumberOfFlowers)->
+
+  % Range of flower id
+  NumbersList = lists:seq(1 * ?screen_width, (1 * ?screen_width) + NumberOfFlowers),%TODO change 1 to garden number
+
+  % Make them atoms
+  RegisterIDs = [intToAtom(Number)|| Number <- NumbersList],
+
+  % All aveilable coordinate in garden
+  AvailableCoordinate =[{X * ?squareSize, Y * ?squareSize} || X <- lists:seq(0, 16), Y <- lists:seq(0, 11)],
+
+  Fun = fun(RegisterID) ->
+    % get random coordinate
+    RandomCoordinate = getRandomNumber(lists:flatlength(AvailableCoordinate)),
+    {X, Y} =lists:nth(RandomCoordinate, AvailableCoordinate),
+
+    % Delete it from aveilable list
+    lists:delete({X, Y}, AvailableCoordinate),
+
+    % Create flower
+    Flower = #flower{id = RegisterID, type = getRandomFlower(), status = normal,
+      timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = X, y = Y }, %TODO change gardenID to garden number
+    gen_server:cast({global, ?masterServerName}, {newFlower, Flower}),
+    Pid = spawn(flower, flowerAsStateMachine, [Flower]),
+    timer:sleep(100),
+    % save in ets
+    ets:insert(flowers, {Flower#flower.id,Pid})
+        end,
+
+  lists:foreach(Fun, RegisterIDs).
+
+intToAtom(Name)->list_to_atom(integer_to_list(Name)).
 
 test() ->
   gen_server:cast({global,garden1},{addFlower,10}).

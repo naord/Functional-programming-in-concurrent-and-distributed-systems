@@ -9,29 +9,30 @@
 -module(masterServer).
 -author("nirkov").
 
--export([start/0, init/1, handle_cast/2, recovery/1]).
+-export([start/0, init/1, handle_cast/2, recovery/1,handle_call/3]).
 -include("globalVariables.hrl").
 %% API
 -behaviour(gen_server).
 -record(state,{}).
 
 start()->
-  GraphicServerPid = graphicServer:start(), % start graphic server
-  io:fwrite("masterServer: init: GraphicServerPid = ~p ~n",[GraphicServerPid]), %TODO for test
-  gen_server:start({global, ?masterServerName}, ?MODULE, [GraphicServerPid], []).
+  GraphicServer1Pid = graphicServer:start(), % start graphic server
+  %GraphicServer2Pid = graphicServer:start(), % TODO: add the servers
+  %GraphicServer3Pid = graphicServer:start(),
+  %GraphicServer4Pid = graphicServer:start(),
+  io:fwrite("masterServer: init: GraphicServerPid = ~p ~n",[GraphicServer1Pid]), %TODO for test
+  gen_server:start({global, ?masterServerName}, ?MODULE, [GraphicServer1Pid], []).
 
-init([GraphicServerPid])->
-  put(garden1, {global, ?garden1Name}),
-  put(garden2, {global, ?garden2Name}),
-  put(garden3, {global, ?garden3Name}),
-  put(garden4, {global, ?garden4Name}),
+init([GraphicServer1Pid])->
+  put({1,garden}, {global, ?garden1Name}),
+  put({2,garden}, {global, ?garden2Name}),
+  put({3,garden}, {global, ?garden3Name}),
+  put({4,garden}, {global, ?garden4Name}),
 
-  put(graphic1, {global, ?graphic1Name}),
-  put(graphic2, {global, ?graphic2Name}),
-  put(graphic3, {global, ?graphic3Name}),
-  put(graphic4, {global, ?graphic4Name}),
-
-  put(graphic1Pid, GraphicServerPid),
+  put({1,graphic}, GraphicServer1Pid),
+  put({2,graphic}, GraphicServer1Pid), %TODO: change GraphicServer2Pid
+  put({3,graphic}, GraphicServer1Pid), %TODO: change GraphicServer3Pid
+  put({4,graphic}, GraphicServer1Pid), %TODO: change GraphicServer4Pid
 
   databaseUtils:startDatabase(),
   {ok, #state{}}.
@@ -40,7 +41,7 @@ handle_cast({newFlower, Flower}, NewState) ->
   databaseUtils:updateFlowerRecord(Flower),
   io:fwrite("masterServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
   % Send to specific graphic server to sit down the gardener.
-  wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{newFlower,Flower}),
+  wx_object:cast(get({Flower#flower.gardenID,graphic}),{newFlower,Flower}),
 
   {noreply, NewState};
 
@@ -48,13 +49,13 @@ handle_cast({newGardener, Gardener}, NewState) ->
   databaseUtils:updateGardenerRecord(Gardener),
 
   % Send to specific graphic server to sit down the gardener.
-  wx_object:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber),{rest, Gardener}),
+  wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}),{rest, Gardener}),
 
   {noreply, NewState};
 
 handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all status changes?
   % Draw the updated status flower in graphicServer of this garden
-  wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{update, Flower}),
+  wx_object:cast(get({Flower#flower.gardenID,graphic}),{update, Flower}),
 
   databaseUtils:updateFlowerRecord(Flower),
   FlowerStatus = Flower#flower.status,
@@ -66,7 +67,7 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
       if
         Length > 0 ->
           [Gardener | _] = Gardeners,
-          gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower});
+          gen_server:cast(get({Flower#flower.gardenID,garden}), {sendGardenerToFlower, Gardener, Flower});
         true ->
           ok
       end;
@@ -86,7 +87,7 @@ handle_cast({updateFlower, Flower}, NewState) ->
 
 handle_cast({deleteFlower, Flower}, NewState) ->
   % Delete the flower from the map in specific graphicServer.
-  wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID), {update, Flower}),
+  wx_object:cast(get({Flower#flower.gardenID,graphic}), {update, Flower}),
 
   % Delete the flower from the database.
   databaseUtils:deleteFlower(Flower#flower.id),
@@ -101,7 +102,7 @@ handle_cast({gardenerWalkToFlower, Gardener}, NewState)->
 handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
   % Send to specific graphic server to move the gardener.
   io:fwrite("masterServer: changeGardenerLocation =~p ~p ~p ~n",[OldX,OldY, Gardener]), %TODO for test
-  wx_object:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {makeSteps, {OldX, OldY, Gardener}}),
+  wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}), {makeSteps, {OldX, OldY, Gardener}}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
@@ -110,7 +111,7 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
 handle_cast({gardenerResting, Gardener}, NewState) ->
   % Send to specific graphic server to sit down the gardener.
   io:fwrite("masterServer: gardenerResting =~p ~n",[Gardener]), %TODO for test
-  wx_object:cast(connectUIServerToGarden(Gardener#gardener.gardenNumber), {rest, Gardener}),
+  wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}), {rest, Gardener}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
@@ -119,7 +120,7 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   if
     Length > 0 ->
       [Flower|_] = ListFlowerInDanger,
-      gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower});
+      gen_server:cast(get({Flower#flower.gardenID,garden}), {sendGardenerToFlower, Gardener, Flower});
     true ->
       ok
   end,
@@ -134,18 +135,21 @@ recovery(GardenID)->
 
   % Send obejcts to graphic server to recover
   %TODO: NEED TO INIT THE GRAPHIC SERVER HERE AND HANDLE RECOVERY. SHOULD BE HANDLE_CALL TO GRAPHICSERVER?
-  wx_object:cast(connectUIServerToGarden(GardenID), {recovery, {FlowerInGardenID, GardenerInGardenID}}),
+  wx_object:cast(get({GardenID,garden}), {recovery, {FlowerInGardenID, GardenerInGardenID}}),%TODO check get function
 
   % Send the flowers sorted list by dangerous level to garden
-  gen_server:cast(get(GardenID), {recovery, SortedFlowerList}).
+  gen_server:cast(get({GardenID,garden}), {recovery, SortedFlowerList}).%TODO check get function
 
-connectUIServerToGarden(GardenNumber)->
-  case GardenNumber of
-    1 -> get(graphic1Pid);
-    2 -> get(graphic2Pid);
-    3 -> get(graphic3Pid);
-    4 -> get(graphic4Pid)
-  end.
+handle_call(_,_,_) ->
+  ok.
+
+%%connectUIServerToGarden(GardenNumber)->
+%%  case GardenNumber of
+%%    1 -> get(?graphic1Name);
+%%    2 -> get(graphic2Pid);
+%%    3 -> get(graphic3Pid);
+%%    4 -> get(graphic4Pid)
+%%  end.
 
 %%connectUIServerToGarden(GardenID)->
 %%  case GardenID of
@@ -155,11 +159,11 @@ connectUIServerToGarden(GardenNumber)->
 %%    garden4 -> get(graphic1)%graphic4
 %%end.
 
-getGardenName(Number) ->
-  case Number of
-    1 -> {global,?garden1Name};
-    2 -> {global,?garden2Name};
-    3 -> {global,?garden3Name};
-    _ -> {global,?garden4Name}
-  end.
+%%getGardenName(Number) ->
+%%  case Number of
+%%    1 -> {global,?garden1Name};
+%%    2 -> {global,?garden2Name};
+%%    3 -> {global,?garden3Name};
+%%    _ -> {global,?garden4Name}
+%%  end.
 

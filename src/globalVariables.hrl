@@ -7,7 +7,7 @@
   numberOfFlower, allImages, lawnImgs}).
 
 % Simulation parameter
--define(level, 20).
+-define(level, 60).
 
 % Constant
 -define(screen_width , 1280).
@@ -29,8 +29,8 @@
 -define(graphic3Name, graphic3).
 -define(graphic4Name, graphic4).
 
--define(pestsTime, 20000).
--define(waterTime, 20000).
+-define(pestsTime, 3).
+-define(waterTime, 3).
 
 % Global Variables
 
