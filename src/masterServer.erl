@@ -119,7 +119,9 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   if
     Length > 0 ->
       [Flower|_] = ListFlowerInDanger,
-      gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower})
+      gen_server:cast(getGardenName(Flower#flower.gardenID), {sendGardenerToFlower, Gardener, Flower});
+    true ->
+      ok
   end,
   {noreply, NewState}.
 

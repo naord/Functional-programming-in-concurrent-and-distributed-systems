@@ -125,7 +125,9 @@ flowerListSortedByDangerousLevel()->
       BsinceProblem = B#flower.timeSinceProblem,
       if
         (AtolarableTime - AsinceProblem) > (BtolarableTime - BsinceProblem) -> false ;
-        (AtolarableTime - AsinceProblem) =< (BtolarableTime - BsinceProblem) -> true
+        (AtolarableTime - AsinceProblem) =< (BtolarableTime - BsinceProblem) -> true;
+      true ->
+        ok
       end
     end,
   lists:sort(ComperTo, AllFLowerInDangerList).

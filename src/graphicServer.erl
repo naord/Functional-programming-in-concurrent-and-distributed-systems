@@ -238,7 +238,7 @@ updateFlowerStatus(Type, NewStatus, {X, Y}) ->
   if
     NewStatus =:= kill -> NewFlowerToDraw = lawn_peice;
     NewStatus =:= normal -> NewFlowerToDraw = Type;
-    true               -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ "_" ++ atom_to_list(NewStatus))
+    true -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ "_" ++ atom_to_list(NewStatus))
   end,
   io:fwrite("graphicServer: updateFlowerStatus: NewFlowerToDraw = ~p ~n",[NewFlowerToDraw]), %TODO for test
 
@@ -290,7 +290,9 @@ makeSteps(Type, OldX, OldY, {NewX, NewY})->
       wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {OldX, OldY}),
       wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_first"), AllImages), {NewX, NewY}),
       timer:sleep(?delay_within_rect),
-      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {NewX, NewY})
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(Type) ++ "_right_second"), AllImages), {NewX, NewY});
+    true ->
+      ok
   end.
 
 sitDownTheGardener(Type, X, Y)->

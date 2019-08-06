@@ -62,11 +62,13 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) ->
+  ets:delete(flowers,Id),
   gen_server:cast(get(server), {deleteFlower, Flower}),%Send to main server delete flower
   {noreply, NewState};
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = GardenerId}}, NewState) ->
+  ets:delete(flowers,Id),
   gen_server:cast({global,GardenerId},cancelWalk),
   gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
   {noreply, NewState};
@@ -110,15 +112,18 @@ terminate(Reason, State) -> %TODO complete
 sendGardenerToFlower(Gardener, Flower) ->
   FlowerId = Flower#flower.id,
   FlowerLocation = {Flower#flower.x, Flower#flower.y},
-  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, get(myNumber), FlowerLocation}), %send to gardener
-  FlowerId ! {setGardenerID,Gardener#gardener.id}. %send to flower
+  [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
+  gen_server:cast({global,Gardener#gardener.id},{walkToFlower, FlowerId, FlowerPid, get(myNumber), FlowerLocation}), %TODO get(myNumber) %send to gardener
+  FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 createFlowers() ->
-  Flower = #flower{id = a, type = getRandomFlower(), status=normal, timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 880, y = 400 },
+  Flower = #flower{id = a, type = getRandomFlower(), status=normal,
+    timeSinceProblem = 0, gardenerID = none, gardenID = 1, x = 880, y = 400 },
   io:fwrite("createFlower ,Flower~p ~n",[Flower]),
   gen_server:cast({global,?masterServerName},{newFlower,Flower}),
-  timer:sleep(3000),
-  register(a, spawn(flower, flowerAsStateMachine, [Flower])).
+  %timer:sleep(3000),
+  Pid = spawn(flower, flowerAsStateMachine, [Flower]),
+  ets:insert(flowers, {Flower#flower.id,Pid}).
 
 getRandomFlower()->
   RandomFlower = getRandomNumber(40),
