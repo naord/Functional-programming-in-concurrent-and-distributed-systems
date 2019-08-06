@@ -27,7 +27,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
 
       % Create new record
       NewStateFlower = newFlower(ID, Type, NewStatus, 0, GardenerID, GardenID, X, Y),
-      print("update status", NewStateFlower),
+      %print("update status", NewStateFlower),
 
       % Send report to the garden about status changing.
       gen_server:cast(getGardenName(GardenID), {changeFlowerStatus, NewStateFlower}),
@@ -36,7 +36,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
 
     {setGardenerID, NewGardenerID} ->
       NewStateFlower = newFlower(ID, Type, Status, TimeSinceProblem, NewGardenerID, GardenID, X, Y),
-      print("setGardenerID", NewGardenerID),
+      %print("setGardenerID", NewGardenerID),
 
       gen_server:cast(getGardenName(GardenID), {updateFlower, NewStateFlower}),
       flowerAsStateMachine(NewStateFlower);
@@ -123,7 +123,7 @@ getTolarableTime(Status)->
     wilted       -> ?waterTime
   end.
 
-print(Msg, Object)-> io:fwrite(Msg ++ "~p~n", [Object]).
+%print(Msg, Object)-> io:fwrite(Msg ++ "~p~n", [Object]).
 %print(Msg)-> io:fwrite(Msg ++ "~n").
 
 %tests()->ok.

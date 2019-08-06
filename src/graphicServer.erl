@@ -52,10 +52,20 @@ handle_cast({update, Flower}, NewState) ->
   updateFlowerStatus(Type, Status, {X, Y}),
   {noreply, NewState};
 
+handle_cast({deleteGardenerFromGarden, {OldX, OldY}}, NewState) ->
+  %io:fwrite("graphicServer: addGardener:  {X, Y}={~p,~p} ~n",[OldX, OldY]), %TODO for test
+  MyState        = get(my_state),
+  WxDC           = MyState#graphic_server.gardenPainter,
+  PrevObjectInXY = maps:get({OldX, OldY}, MyState#graphic_server.objectsMatrix),
+  wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {OldX, OldY}),
+  {noreply, NewState};
+
+
 handle_cast({makeSteps, {OldX, OldY, Gardener}}, NewState) ->
   %io:fwrite("graphicServer: makeSteps: Gardener = ~p ~n",[Gardener]), %TODO for test
-
-  makeSteps(Gardener#gardener.type, OldX, OldY, Gardener#gardener.location),
+  GardenNumber = Gardener#gardener.gardenNumber,
+  {X,Y} = Gardener#gardener.location,
+  makeSteps(Gardener#gardener.type,normalizeX(OldX,GardenNumber), OldY, {normalizeX(X,GardenNumber),Y}),
   {noreply, NewState};
 
 handle_cast({newFlower,Flower}, NewState) ->
@@ -70,11 +80,26 @@ handle_cast({rest, Gardener}, NewState) ->
   Type = Gardener#gardener.type,
   {X,Y} = Gardener#gardener.location,
   sitDownTheGardener(Type, X, Y),
+  {noreply, NewState};
+
+handle_cast({addGardener, Gardener}, NewState) ->
+  %io:fwrite("graphicServer: addGardener: Gardener ~p ~n",[ Gardener]), %TODO for test
+  MyState      = get(my_state),
+  WxDC         = MyState#graphic_server.gardenPainter,
+  GardenerType = Gardener#gardener.type,
+  AllImages    = MyState#graphic_server.allImages,
+  {X, Y}       = Gardener#gardener.location,
+
+  if
+    X =:= ?screen_width ->
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(GardenerType) ++ "_left_first"), AllImages), {X, Y});
+    true ->
+      wxDC:drawBitmap(WxDC, maps:get(list_to_atom(atom_to_list(GardenerType) ++  "_right_first"), AllImages), {X, Y})
+  end,
   {noreply, NewState}.
 
-
-handle_event(Wx, State) ->
-  {stop, normal, State}.
+handle_event(Wx, NewState) ->
+  {noreply, NewState}.
 
 handle_info(Msg, NewState) ->
   %io:format("~p~n", [Msg]),
@@ -264,6 +289,8 @@ drawNewFLower(Type , X, Y)->
 
 
 makeSteps(Type, OldX, OldY, {NewX, NewY})->
+  io:fwrite("graphicServer: makeSteps:  ~p ~p ~n",[OldX, NewX]), %TODO for test
+
   MyState        = get(my_state),
   WxDC           = MyState#graphic_server.gardenPainter,
   AllImages      = MyState#graphic_server.allImages,
@@ -379,6 +406,7 @@ checkCoordinate(X, Y) ->
     true -> error
   end.
 
+normalizeX(X, GardenNumber)-> X rem (?screen_width + ?squareSize).
 
 
 %%fillMatrix(Insert, {X, Y}, Map)->

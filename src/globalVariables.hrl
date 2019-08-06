@@ -36,7 +36,7 @@
 
 -define(handle, 5000).
 -define(squareSize,80).
--define(walkTime, 10).
+-define(walkTime, 300).
 -define(gardenSize, 1000).
 
 % Images paths

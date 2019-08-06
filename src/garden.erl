@@ -84,8 +84,8 @@ handle_cast({gardenerWalkToFlower,Gardener}, NewState) ->
   {noreply, NewState};
 
 %From gardener
-handle_cast({changeGardenerGarden,Gardener}, NewState) ->
-  gen_server:cast(get(server),{changeGardenerGarden,Gardener}),
+handle_cast({changeGardenerGarden,{OldGarden, OldX, OldY, Gardener}}, NewState) ->
+  gen_server:cast(get(server),{changeGardenerGarden,{OldGarden, OldX, OldY, Gardener}}),
   {noreply, NewState};
 
 %From gardener

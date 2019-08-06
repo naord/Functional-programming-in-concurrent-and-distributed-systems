@@ -82,7 +82,7 @@ getRestingGardener()->
       end,
   try
     {_, Ans} = mnesia:transaction(F),
-    io:fwrite("database:  mnesia:transaction(F) = ~p ~n",[ mnesia:transaction(F)]), %TODO for test
+    %io:fwrite("database:  mnesia:transaction(F) = ~p ~n",[ mnesia:transaction(F)]), %TODO for test
     Ans
   catch
      error : _ -> io:format("getRestingGardener failed");
