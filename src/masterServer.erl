@@ -17,20 +17,20 @@
 
 start()->
   GraphicServer1Pid = graphicServer:start(), % start graphic server
-  %GraphicServer2Pid = graphicServer:start(), % TODO: add the servers
-  %GraphicServer3Pid = graphicServer:start(),
+  GraphicServer2Pid = 1,%graphicServer:start(),
+  %GraphicServer3Pid = graphicServer:start(), % TODO: add the servers
   %GraphicServer4Pid = graphicServer:start(),
-  io:fwrite("masterServer: init: GraphicServerPid = ~p ~n",[GraphicServer1Pid]), %TODO for test
-  gen_server:start({global, ?masterServerName}, ?MODULE, [GraphicServer1Pid], []).
+  %io:fwrite("masterServer: init: GraphicServerPid = ~p ~p ~n",[GraphicServer1Pid,GraphicServer2Pid]), %TODO for test
+  gen_server:start({global, ?masterServerName}, ?MODULE, [GraphicServer1Pid,GraphicServer2Pid], []).
 
-init([GraphicServer1Pid])->
+init([GraphicServer1Pid,GraphicServer2Pid])->
   put({1,garden}, {global, ?garden1Name}),
   put({2,garden}, {global, ?garden2Name}),
   put({3,garden}, {global, ?garden3Name}),
   put({4,garden}, {global, ?garden4Name}),
 
   put({1,graphic}, GraphicServer1Pid),
-  put({2,graphic}, GraphicServer1Pid), %TODO: change GraphicServer2Pid
+  put({2,graphic}, GraphicServer2Pid),
   put({3,graphic}, GraphicServer1Pid), %TODO: change GraphicServer3Pid
   put({4,graphic}, GraphicServer1Pid), %TODO: change GraphicServer4Pid
 
@@ -77,10 +77,6 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
   {noreply, NewState};
 
 handle_cast({updateFlower, Flower}, NewState) ->
-  % Draw the updated status flower in graphicServer of this garden
-
-  %wx_object:cast(connectUIServerToGarden(Flower#flower.gardenID),{update, Flower}), %TODO need to delete NewState from cast
-
   % Update the database.
   databaseUtils:updateFlowerRecord(Flower),
   {noreply, NewState};

@@ -44,7 +44,7 @@ handle_call(Request, From, NewState) ->
 
 
 handle_cast({update, Flower}, NewState) ->
-  io:fwrite("graphicServer: update: Flower = ~p ~n",[Flower]), %TODO for test
+  %io:fwrite("graphicServer: update: Flower = ~p ~n",[Flower]), %TODO for test
   Type = Flower#flower.type,
   Status = Flower#flower.status,
   X = Flower#flower.x,
@@ -53,13 +53,13 @@ handle_cast({update, Flower}, NewState) ->
   {noreply, NewState};
 
 handle_cast({makeSteps, {OldX, OldY, Gardener}}, NewState) ->
-  io:fwrite("graphicServer: makeSteps: Gardener = ~p ~n",[Gardener]), %TODO for test
+  %io:fwrite("graphicServer: makeSteps: Gardener = ~p ~n",[Gardener]), %TODO for test
 
   makeSteps(Gardener#gardener.type, OldX, OldY, Gardener#gardener.location),
   {noreply, NewState};
 
 handle_cast({newFlower,Flower}, NewState) ->
-  io:fwrite("graphicServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
+  %io:fwrite("graphicServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
   Type = Flower#flower.type,
   X = Flower#flower.x,
   Y = Flower#flower.y,
@@ -77,7 +77,7 @@ handle_event(Wx, State) ->
   {stop, normal, State}.
 
 handle_info(Msg, NewState) ->
-  io:format("~p~n", [Msg]),
+  %io:format("~p~n", [Msg]),
   {noreply, NewState}.
 
 
@@ -96,7 +96,6 @@ initializeGraphicWindow(Wx)->
   % Create enter window with grass img background - on a GardenFrame.
   wxWindow:setSize(GardenFrame, 0, 0, ?screen_width, ?screen_height),
   wxFrame:show(GardenFrame),
-  wxFrame:connect(GardenFrame, enter_window),
   wxFrame:connect(GardenFrame, enter_window),
 
   % Upload background images.

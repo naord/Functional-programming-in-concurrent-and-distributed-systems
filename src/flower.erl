@@ -43,13 +43,13 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
 
 
     handleProblem ->
-      print("flower handle problem", Flower),
+      %print("flower handle problem", Flower),
       % Time the gardener handle the problem
       timer:sleep(?handle),
-      io:fwrite("flower handle problem"),
+      %io:fwrite("flower handle problem"),
 
       % New record flower with normal state.
-      NewStateFlower = newFlower(ID, Type, normal, 0, GardenerID, GardenID, X, Y),
+      NewStateFlower = newFlower(ID, Type, normal, 0, none, GardenID, X, Y),
 
       % Change the status of the flower in the server to normal.
       gen_server:cast(getGardenName(GardenID), {changeFlowerStatus, NewStateFlower}),
@@ -79,7 +79,7 @@ flowerAsStateMachine(Flower=#flower{id=ID, type =Type , status=Status, timeSince
           TimeSinceProblem > ToleranceTime ->
 
             gen_server:cast(getGardenName(GardenID), {flowerDie, Flower#flower{status = kill}}),
-            io:fwrite("flower: kill"),
+            % io:fwrite("flower: kill"),
             self() ! kill,
             exit(flowerDie);
 

@@ -128,7 +128,7 @@ getAllObjectsOf(MnesiaBlock) ->
 flowerListSortedByDangerousLevel()->
   AllFLowerInDanger =
     fun() ->
-      Quary = qlc:q([Flower || Flower <- mnesia:table(flower), Flower#flower.status =/= normal]),
+      Quary = qlc:q([Flower || Flower <- mnesia:table(flower), Flower#flower.status =/= normal, Flower#flower.gardenerID =:= none]),
       qlc:e(Quary)
     end,
   {atomic, AllFLowerInDangerList} = mnesia:transaction(AllFLowerInDanger),
