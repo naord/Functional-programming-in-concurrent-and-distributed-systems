@@ -33,35 +33,49 @@
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
-start_link(MainServerGlobalName,{Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},GardenNumber,Type, Location) ->
-  gen_server:start_link({local,?MODULE}, ?MODULE, [MainServerGlobalName,Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid,GardenNumber,Type, Location], []).
 
-init([MainServerGlobalName,{Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},GardenNumber,Type, Location]) ->
+%%start_link(MainServerGlobalName,{Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},GardenNumber,Type, Location) ->
+%%  gen_server:start_link({local,?MODULE}, ?MODULE, [MainServerGlobalName,Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid,GardenNumber,Type, Location], []).
+%%
+%%init([MainServerGlobalName,{Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},GardenNumber,Type, Location]) ->
+%%  put(server,MainServerGlobalName),
+%%  put(1,{garden,Garden1Pid}),
+%%  put(2,{garden,Garden2Pid}),
+%%  put(3,{garden,Garden3Pid}),
+%%  put(4,{garden,Garden4Pid}),
+%%  Gardener = #gardener{id = self(), type = Type, location = Location, gardenNumber = GardenNumber},
+%%  gen_server:cast(get(server),{newGardener,Gardener}),
+%%  {ok, Gardener}.
+
+
+start_link(MainServerGlobalName, Garden1Pid, GardenNumber,Type, Location) ->
+  gen_server:start_link({local,?MODULE}, ?MODULE, [MainServerGlobalName,Garden1Pid,GardenNumber,Type, Location], []).
+
+init([MainServerGlobalName, Garden1Pid, GardenNumber,Type, Location]) ->
   put(server,MainServerGlobalName),
-  put(1,{garden,Garden1Pid}),
-  put(2,{garden,Garden2Pid}),
-  put(3,{garden,Garden3Pid}),
-  put(4,{garden,Garden4Pid}),
+  put(1,Garden1Pid),
+
   Gardener = #gardener{id = self(), type = Type, location = Location, gardenNumber = GardenNumber},
   gen_server:cast(get(server),{newGardener,Gardener}),
   {ok, Gardener}.
 
 %for case flower die while gardner on his way.
 handle_cast(cancelWalk, State) ->
+  io:fwrite("gardener: cancelWalk State = ~p ~n",[State]),
   rest(State#gardener{state = resting});
 
 %handle flower request.
 handle_cast({walkToFlower, FlowerId, FlowerPid, GardenNumber, {DestX,DestY}}, State) ->
   InputCheck = abs((DestX rem 80) + (DestY rem 80)) == 0, %TODO delete?
   case InputCheck of
-     false ->
-       io:fwrite("Wrong input to handle_cast(walkToFlower), input ={~p,~p} ~n",[DestX, DestY]);
-     true ->
-       {MyX, MyY} = State#gardener.location,
-       Dest = calcNewDest(GardenNumber, DestX, DestY, MyX),% need to get near the flower.
-       io:fwrite("walkToFlower:get(gardenNumber)=~p Location = ~p, Dest1 = ~p newDest = ~p ~n",[get(State#gardener.gardenNumber),{MyX, MyY},{DestX,DestY},Dest]),%TODO for debug
-       gen_server:cast(get(State#gardener.gardenNumber),{gardenerWalkToFlower, State#gardener{state = walkToFlower, flowerId = FlowerId}}),
-       walking(State#gardener{state = walkToFlower, flowerId = FlowerId}, Dest, FlowerPid)
+    false ->
+      io:fwrite("Wrong input to handle_cast(walkToFlower), input ={~p,~p} ~n",[DestX, DestY]);
+    true ->
+      {MyX, MyY} = State#gardener.location,
+      Dest = calcNewDest(GardenNumber, DestX, DestY, MyX),% need to get near the flower.
+      io:fwrite("walkToFlower:get(gardenNumber)=~p Location = ~p, Dest1 = ~p newDest = ~p ~n",[get(State#gardener.gardenNumber),{MyX, MyY},{DestX,DestY},Dest]),%TODO for debug
+      gen_server:cast(get(State#gardener.gardenNumber),{gardenerWalkToFlower, State#gardener{state = walkToFlower, flowerId = FlowerId}}),
+      walking(State#gardener{state = walkToFlower, flowerId = FlowerId}, Dest, FlowerPid)
   end;
 
 handle_cast(Request, State) -> %TODO for debug
@@ -110,7 +124,7 @@ walking(State, {DestX,DestY}, FlowerPid) ->
 %%            walkRandom ->
 %%              walkRandom;%randWalk(State,Sender);
             walkToFlower ->
-              %gen_server:cast(get(State#gardener.gardenNumber),{gardenerHandleFlower,State#gardener{state = handleFlower}}),
+              %TODO: create Handle state for gardener gen_server:cast(get(State#gardener.gardenNumber),{gardenerHandleFlower,State#gardener{state = handleFlower}}),
               handleFlower(State#gardener{state = handleFlower}, FlowerPid);
             _->
               io:fwrite("walking: bad state after arriveing. State= ~p ~n",[State]) %TODO for debug
@@ -146,6 +160,7 @@ moveGarden(NewX, GardenNumber) ->
   end.
 
 isCanceledWalk(State) ->
+  %gen_server:cast(get(State#gardener.gardenNumber),{gardenerWalkToFlower, State#gardener{state = walkToFlower, flowerId = FlowerId}}),
   Status = State#gardener.state,
   case Status of
     walkToFlower ->
@@ -166,18 +181,17 @@ updateLocation(Location, Dest) ->
   end.
 
 isArrive(MyX, MyY, DestX, DestY) ->
-   ((MyX == DestX) and (MyY == DestY)).
+  ((MyX == DestX) and (MyY == DestY)).
 
 handleFlower(State, FlowerPid) ->
   io:fwrite(" Gardener: handleFlower, State= ~p ~p ~n", [State, FlowerPid]),
   FlowerPid ! handleProblem,
   timer:sleep(?handle),
   rest(State#gardener{state = resting}).
-  %randWalk(State#gardener{state = walkRandom}, Sender).
+%randWalk(State#gardener{state = walkRandom}, Sender).
 
 
 test() ->
   gen_server:cast({global,gardener1},{walkToFlower, 123, 2, {0,?screen_height}}), %send to gardener
   gen_server:cast({global,gardener1},cancelWalk).
-
 

@@ -12,8 +12,8 @@
 % Constant
 -define(screen_width , 1280).
 -define(screen_height, 880).
--define(delay_within_rect, 600).
--define(delay_between_rect, 330).
+-define(delay_within_rect,300).
+-define(delay_between_rect,100).
 -define(maxNumberOfFlower, 10).
 
 % Server Names
@@ -29,14 +29,14 @@
 -define(graphic3Name, graphic3).
 -define(graphic4Name, graphic4).
 
--define(pestsTime, 3).
--define(waterTime, 3).
+-define(pestsTime, 4).
+-define(waterTime, 4).
 
 % Global Variables
 
 -define(handle, 5000).
 -define(squareSize,80).
--define(walkTime, 300).
+-define(walkTime, 100).
 -define(gardenSize, 1000).
 
 % Images paths
