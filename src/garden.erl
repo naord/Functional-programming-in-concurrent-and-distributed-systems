@@ -18,17 +18,13 @@
 
 -record(state, {number}).
 
-%TODO check if need more msg from/to flower and main server
-%TODO who create the flowers?
-
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
 start_link(Number, MainServerGlobalName) ->
   MyNameAtom = list_to_atom("garden" ++ integer_to_list(Number)),
-  io:fwrite("garden: start_link: Number = ~p ~n",[MyNameAtom]),
-  put(gardenName, MyNameAtom),
-
-  gen_server:start_link({global, get(gardenName)}, ?MODULE, [MainServerGlobalName,Number], []).
+  %io:fwrite("garden: start_link: Number = ~p EtsName= ~p ~n",[MyNameAtom,EtsName]),
+  %put(gardenName, MyNameAtom),
+  gen_server:start_link({global, MyNameAtom}, ?MODULE, [MainServerGlobalName,Number], []).
 
 %% A set or ordered_set table can only have one object associated with each key
 %% When the process terminates, the table is automatically destroyed
@@ -37,19 +33,21 @@ start_link(Number, MainServerGlobalName) ->
 %% The table is a set table: one key, one object, no order among objects
 
 init([MainServerGlobalName, Number]) ->
+  EtsName = list_to_atom("flowers" ++ integer_to_list(Number)),
+  put(etsName, EtsName),
   put(server,{masterServer,MainServerGlobalName}),
   GraphicServerPid = graphicServer:start(),
   gen_server:call({masterServer,MainServerGlobalName},{connectGarden,Number,node(),GraphicServerPid}),
   %gardener:start_link(MainServerGlobalName,nir,{0,0}),
   %gen_server:cast(get(server),{newGardener,Gardener}),
-  ets:new(flowers,[set,named_table,private]),
+  ets:new(get(etsName),[set,named_table,private]),
   %createFlowers(30, Number), %TODO create flowers
   {ok, #state{number = Number}}.
 
 %From MainServer
 handle_cast({newGardener, Gardener}, NewState) ->
   %TODO need to wait to get all
-  createFlowers(30, Gardener#gardener.gardenNumber), %TODO create flowers
+  createFlowers(10, Gardener#gardener.gardenNumber), %TODO create flowers
   {noreply, NewState};
 
 %From MainServer
@@ -70,13 +68,13 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = none}}, NewState) ->
-  ets:delete(flowers,Id),
+  ets:delete(get(etsName),Id),
   gen_server:cast(get(server), {deleteFlower, Flower}),%Send to main server delete flower
   {noreply, NewState};
 
 %From Flower
 handle_cast({flowerDie,Flower=#flower{id = Id, gardenerID = GardenerPid}}, NewState) ->
-  ets:delete(flowers,Id),
+  ets:delete(get(etsName),Id),
   gen_server:cast(GardenerPid,cancelWalk),
   gen_server:cast(get(server), {deleteFlower,Flower}),%Send to main server delete flower
   {noreply, NewState};
@@ -120,7 +118,7 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState) ->
 %%  {noreply, NewState}.
 
 handle_call({isFlowerAlive, FlowerId},_,State)->
-  Reply = ets:lookup(flowers,FlowerId),
+  Reply = ets:lookup(get(etsName),FlowerId),
   {reply,Reply,State}.
 
 terminate(Reason, State) -> %TODO complete
@@ -130,7 +128,7 @@ terminate(Reason, State) -> %TODO complete
 sendGardenerToFlower(Gardener, Flower,State) ->
   FlowerId = Flower#flower.id,
   FlowerLocation = {Flower#flower.x, Flower#flower.y},
-  [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
+  [{_,FlowerPid}] = ets:lookup(get(etsName),FlowerId),
   %io:fwrite("garden: sendGardenerToFlower: Gardener = ~p ~n",[Gardener]),
   gen_server:cast(Gardener#gardener.id,{walkToFlower, FlowerId, FlowerPid, State#state.number, FlowerLocation, self()}), %TODO get(myNumber) %send to gardener
   FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
@@ -187,7 +185,7 @@ createFlowers(NumberOfFlowers, GardenNumber)->
     Pid = spawn(flower, flowerAsStateMachine, [GardenName, Flower]),
     timer:sleep(100),
     % save in ets
-    ets:insert(flowers, {Flower#flower.id, Pid})
+    ets:insert(get(etsName), {Flower#flower.id, Pid})
         end,
 
   lists:foreach(Fun, RegisterIDs).

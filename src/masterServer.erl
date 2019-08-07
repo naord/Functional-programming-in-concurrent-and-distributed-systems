@@ -13,42 +13,30 @@
 -include("globalVariables.hrl").
 %% API
 -behaviour(gen_server).
--record(state,{numOfGardens = 1}).
+-record(state,{numOfGardens = 0 , gardensPids = []}).
 
 start()->
-  %GraphicServer1Pid = graphicServer:start(),
-  %GraphicServer2Pid = graphicServer:start(),
-  %GraphicServer3Pid = graphicServer:start(),
-  %GraphicServer4Pid = graphicServer:start(),
   %io:fwrite("masterServer: init: GraphicServerPid = ~p ~p ~n",[GraphicServer1Pid,GraphicServer2Pid]), %TODO for test
   gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
 init([])->
-%%  put({1,garden}, {global, ?garden1Name}),
-%%  put({2,garden}, {global, ?garden2Name}),
-%%  put({3,garden}, {global, ?garden3Name}),
-%%  put({4,garden}, {global, ?garden4Name}),
-%%
-%%  put({1,graphic}, GraphicServer1Pid),
-%%  put({2,graphic}, GraphicServer2Pid),
-%%  put({3,graphic}, GraphicServer1Pid), %TODO: change GraphicServer3Pid
-%%  put({4,graphic}, GraphicServer1Pid), %TODO: change GraphicServer4Pid
-
   databaseUtils:startDatabase(),
   {ok, #state{}}.
 
-handle_call({connectGarden,Number,Node,GraphicPid},From,State=#state{numOfGardens = NumOfGardens}) ->
+handle_call({connectGarden,Number,Node,GraphicPid},From,State=#state{numOfGardens = NumOfGardens, gardensPids = GardenPids}) ->
   {Pid,_} = From,
   monitor_node(Node,true),%TODO check if work
   %wx_object:cast(UIServerPid,{numOfServers,length(ServersList)+1}), TODO for gui
   put({Number,garden},Pid), %TODO need node?
   put({Number,graphic}, GraphicPid), %TODO need node?
-  case NumOfGardens =:= 1 of
+  NewState = State#state{numOfGardens = NumOfGardens + 1, gardensPids = GardenPids ++ [Pid]},
+  io:fwrite("masterServer: connectGarden: NewState = ~p ~n",[NewState]), %TODO for test
+  case NewState#state.numOfGardens =:= ?numOfGardens of
     true ->
-      createGardeners();
+      createGardeners(NewState);
     false -> ok
   end,
-  {reply,ok,State#state{numOfGardens = NumOfGardens + 1}}.
+  {reply,ok,NewState}.
 
 
 handle_cast({newFlower, Flower}, NewState) ->
@@ -159,29 +147,46 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   end,
   {noreply, NewState}.
 
-
-createGardeners() ->
-  %GardenNumber = NewState#state.number,
+createGardeners(NewState)  ->
+  %GardenNumber = NewState#state.numOfGardens,
   %X = ((GardenNumber - 1) * ?screen_width) + ?squareSize,
+  GardensPid = NewState#state.gardensPids,
 
-  %gardener:start_link(get(server), GlobalParams, GardenNumber, nir, {X+?squareSize,0}),
-  %gardener:start_link(get(server), GlobalParams, GardenNumber, nir, {X+2*?squareSize,0}),
+  gardener:start_link(self(), GardensPid, 1, nir, {0,0},1),
+  gardener:start_link(self(), GardensPid, 1, nir, {?squareSize,0},2),
+  gardener:start_link(self(), GardensPid, 1, nir, {2*?squareSize,0},3),
+  gardener:start_link(self(), GardensPid, 1, nir, {3*?squareSize,0},4),
+
+  gardener:start_link(self(), GardensPid, 2, nir, {?squareSize + ?screen_width,0},5),
+  gardener:start_link(self(), GardensPid, 2, nir, {2*?squareSize + ?screen_width,0},6),
+  gardener:start_link(self(), GardensPid, 2, nir, {3*?squareSize + ?screen_width,0},7),
+  gardener:start_link(self(), GardensPid, 2, nir, {4*?squareSize + ?screen_width,0},8),
+
+  gardener:start_link(self(), GardensPid, 3, nir, {?squareSize + ?screen_width*2,0},9),
+  gardener:start_link(self(), GardensPid, 3, nir, {2*?squareSize + ?screen_width*2,0},10),
+  gardener:start_link(self(), GardensPid, 3, nir, {3*?squareSize + ?screen_width*2,0},11),
+  gardener:start_link(self(), GardensPid, 3, nir, {4*?squareSize + ?screen_width*2,0},12).
+
+%%
+%%  gardener:start_link(self(), GardensPid, 4, nir, {0,0}),
+%%  gardener:start_link(self(), GardensPid, 4, nir, {?squareSize,0}),
+%%  gardener:start_link(self(), GardensPid, 4, nir, {2*?squareSize,0}),
+%%  gardener:start_link(self(), GardensPid, 4, nir, {3*?squareSize,0}).
 
 
-  Garden1Pid = get({1,garden}),
-  gardener:start_link(self(), Garden1Pid, 1, nir, {0,0}).
 
-
-%gen_server:cast(Garden1Pid, {createGardeners, Garden1Pid}).
-%%  Garden1Pid = get({1,garden}),
-%%  Garden2Pid = get({2,garden}),
-%%  Garden3Pid = get({3,garden}),
-%%  Garden4Pid = get({4,garden}),
-%%  GlobalParams = {Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},%GardenNumber,Type, Location
-%%  gen_server:cast(Garden1Pid, {createGardeners, GlobalParams}),
-%%  gen_server:cast(Garden2Pid, {createGardeners, GlobalParams}),
-%%  gen_server:cast(Garden3Pid, {createGardeners, GlobalParams}),
-%%  gen_server:cast(Garden4Pid, {createGardeners, GlobalParams}).
+%%createGardeners(GardenNum,GardenerNumber,GardensPid,GardenersToStop) when ((GardenerNumber =< GardenersToStop) and (GardenNum =< ?numOfGardens)) ->
+%%  io:fwrite("masterServer: createGardeners =~p ~p ~p ~p ~n",[GardenNum,GardenerNumber,GardensPid,GardenersToStop]), %TODO for test
+%%  gardener:start_link(self(), GardensPid, GardenNum, nir, {?squareSize * GardenerNumber,0}),
+%%  createGardeners(GardenNum,GardenerNumber + 1,GardensPid,GardenersToStop);
+%%
+%%createGardeners(GardenNum,GardenerNumber,GardensPid,GardenersToStop) when GardenNum =< ?numOfGardens ->
+%%  io:fwrite("masterServer: createGardeners2 =~p ~p ~p ~p ~n",[GardenNum,GardenerNumber,GardensPid,GardenersToStop]), %TODO for test
+%%  createGardeners(GardenNum + 1, 1,GardensPid,GardenersToStop);
+%%
+%%createGardeners(GardenNum,GardenerNumber,_,GardenersToStop) ->
+%%  io:fwrite("masterServer: createGardeners3 done ~p ~p ~p ~p ~p ~n",[((GardenerNumber =< GardenersToStop) and (GardenNum =< ?numOfGardens)),GardenerNumber,GardenersToStop,GardenNum,?numOfGardens]), %TODO for test
+%%  ok.
 
 recovery(GardenID)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),

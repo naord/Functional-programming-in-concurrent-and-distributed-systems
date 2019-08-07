@@ -29,12 +29,12 @@
 -define(graphic3Name, graphic3).
 -define(graphic4Name, graphic4).
 
--define(pestsTime, 4).
+-define(pestsTime, 5).
 -define(waterTime, 4).
 
 % Global Variables
-
--define(handle, 5000).
+-define(numOfGardens, 3).
+-define(handle, 1000).
 -define(squareSize,80).
 -define(walkTime, 100).
 -define(gardenSize, 1000).
