@@ -264,7 +264,7 @@ updateFlowerStatus(Type, NewStatus, {X, Y}) ->
     NewStatus =:= normal -> NewFlowerToDraw = Type;
     true -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ "_" ++ atom_to_list(NewStatus))
   end,
-  io:fwrite("graphicServer: updateFlowerStatus: NewFlowerToDraw = ~p ~n",[NewFlowerToDraw]), %TODO for test
+  %io:fwrite("graphicServer: updateFlowerStatus: NewFlowerToDraw = ~p ~n",[NewFlowerToDraw]), %TODO for test
 
   MyState = get(my_state),
   NewMap = updateObjectStatusInObjectsMatrix(X, Y, NewFlowerToDraw, (MyState#graphic_server.objectsMatrix)),
@@ -289,7 +289,7 @@ drawNewFLower(Type , X, Y)->
 
 
 makeSteps(Type, OldX, OldY, {NewX, NewY})->
-  io:fwrite("graphicServer: makeSteps:  ~p ~p ~n",[OldX, NewX]), %TODO for test
+  %io:fwrite("graphicServer: makeSteps:  ~p ~p ~n",[OldX, NewX]), %TODO for test
 
   MyState        = get(my_state),
   WxDC           = MyState#graphic_server.gardenPainter,

@@ -65,7 +65,7 @@ handle_cast(cancelWalk, State) ->
   rest(State#gardener{state = resting});
 
 %handle flower request.
-handle_cast({walkToFlower, FlowerId, FlowerPid, GardenNumber, {DestX,DestY}}, State) ->
+handle_cast({walkToFlower, FlowerId, FlowerPid, GardenNumber, {DestX,DestY},GardenPid}, State) ->
   InputCheck = abs((DestX rem 80) + (DestY rem 80)) == 0, %TODO delete?
   case InputCheck of
     false ->
@@ -75,7 +75,7 @@ handle_cast({walkToFlower, FlowerId, FlowerPid, GardenNumber, {DestX,DestY}}, St
       Dest = calcNewDest(GardenNumber, DestX, DestY, MyX),% need to get near the flower.
       io:fwrite("walkToFlower:get(gardenNumber)=~p Location = ~p, Dest1 = ~p newDest = ~p ~n",[get(State#gardener.gardenNumber),{MyX, MyY},{DestX,DestY},Dest]),%TODO for debug
       gen_server:cast(get(State#gardener.gardenNumber),{gardenerWalkToFlower, State#gardener{state = walkToFlower, flowerId = FlowerId}}),
-      walking(State#gardener{state = walkToFlower, flowerId = FlowerId}, Dest, FlowerPid)
+      walking(State#gardener{state = walkToFlower, flowerId = FlowerId}, Dest, FlowerPid, GardenPid)
   end;
 
 handle_cast(Request, State) -> %TODO for debug
@@ -90,9 +90,9 @@ rest(State) ->
   io:fwrite("rest: State = ~p ~n",[State]),%TODO for debug
   {noreply, State}.
 
-walking(State, {DestX,DestY}, FlowerPid) ->
+walking(State, {DestX,DestY}, FlowerPid, GardenPid) ->
   timer:sleep(?walkTime),
-  CancelWalk = isCanceledWalk(State),
+  CancelWalk = isCanceledWalk(State,GardenPid),
   case CancelWalk of %for case flower die while gardner on his way.
     true -> %need to stop (status changed by garden)
       io:fwrite("Stopped walking: State= ~p ~n",[State]),
@@ -112,12 +112,12 @@ walking(State, {DestX,DestY}, FlowerPid) ->
             CurrGarden =:= NewGarden -> %stay in the same garden
               gen_server:cast(get(State#gardener.gardenNumber),{changeGardenerLocation,
                 {MyX,MyY,State#gardener{location = {NewX,NewY}}}}),
-              walking(State#gardener{location = {NewX,NewY}}, {DestX,DestY},FlowerPid);
+              walking(State#gardener{location = {NewX,NewY}}, {DestX,DestY},FlowerPid,GardenPid);
             true -> %move to new garden
               gen_server:cast(get(State#gardener.gardenNumber),{changeGardenerGarden,
                 {CurrGarden, MyX,MyY,State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}}}),
               timer:sleep(2000),
-              walking(State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}, {DestX,DestY},FlowerPid)
+              walking(State#gardener{location = {NewX,NewY},gardenNumber = NewGarden}, {DestX,DestY},FlowerPid,GardenPid)
           end;
         true -> %stop walking
           Status = State#gardener.state,
@@ -160,8 +160,8 @@ moveGarden(NewX, GardenNumber) ->
       GardenNumber
   end.
 
-isCanceledWalk(State) ->
-  Reply = gen_server:call(get(State#gardener.gardenNumber),{isFlowerAlive, State#gardener.flowerId}),
+isCanceledWalk(State,GardenPid) ->
+  Reply = gen_server:call(GardenPid,{isFlowerAlive, State#gardener.flowerId}),
   io:fwrite("Gardener: isCanceledWalk, Reply= ~p ~n", [Reply]),
   Length =  lists:flatlength(Reply),
   case Length > 0 of

@@ -77,7 +77,7 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
     FlowerStatus =/= normal ->
       Gardeners = databaseUtils:getRestingGardener(),
       Length =  lists:flatlength(Gardeners),
-      io:fwrite("masterServer: changeFlowerStatus: Gardeners= ~p ~n",[Gardeners]), %TODO for test
+      %io:fwrite("masterServer: changeFlowerStatus: Gardeners= ~p ~n",[Gardeners]), %TODO for test
       if
         Length > 0 ->
           [Gardener | _] = Gardeners,

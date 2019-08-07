@@ -132,7 +132,7 @@ sendGardenerToFlower(Gardener, Flower,State) ->
   FlowerLocation = {Flower#flower.x, Flower#flower.y},
   [{_,FlowerPid}] = ets:lookup(flowers,FlowerId),
   %io:fwrite("garden: sendGardenerToFlower: Gardener = ~p ~n",[Gardener]),
-  gen_server:cast(Gardener#gardener.id,{walkToFlower, FlowerId, FlowerPid, State#state.number, FlowerLocation}), %TODO get(myNumber) %send to gardener
+  gen_server:cast(Gardener#gardener.id,{walkToFlower, FlowerId, FlowerPid, State#state.number, FlowerLocation, self()}), %TODO get(myNumber) %send to gardener
   FlowerPid ! {setGardenerID,Gardener#gardener.id}. %send to flower
 
 getRandomFlower()->
