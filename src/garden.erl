@@ -119,8 +119,9 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState) ->
 %%  gardener:start_link(get(server), GlobalParams, GardenNumber, nir, {X+2*?squareSize,0}),
 %%  {noreply, NewState}.
 
-handle_call(Request,From,State)->
-  {Request,From,State}.
+handle_call({isFlowerAlive, FlowerId},_,State)->
+  Reply = ets:lookup(flowers,FlowerId),
+  {reply,Reply,State}.
 
 terminate(Reason, State) -> %TODO complete
   {Reason, State}.
