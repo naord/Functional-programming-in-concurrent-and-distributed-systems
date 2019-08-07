@@ -13,7 +13,7 @@
 -include("globalVariables.hrl").
 
 %% API
--export([init/1, start_link/3, handle_cast/2, handle_call/3]).
+-export([init/1, start_link/5, handle_cast/2, handle_call/3]).
 -export([test/0]). %TODO for test
 
 %%----------------------------------------------------
@@ -33,17 +33,16 @@
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
-start_link(GlobalName, Type, Location) ->
-  gen_server:start_link({global,GlobalName}, ?MODULE, [GlobalName, Type, Location], []).
+start_link(MainServerGlobalName,{Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},GardenNumber,Type, Location) ->
+  gen_server:start_link({local,?MODULE}, ?MODULE, [MainServerGlobalName,Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid,GardenNumber,Type, Location], []).
 
-init([GlobalName, Type, Location]) ->
-  put(server,{global,?masterServerName}),
-  put(1,{global,?garden1Name}),
-  put(2,{global,?garden2Name}),
-  put(3,{global,?garden3Name}),
-  put(4,{global,?garden4Name}),
-  %TODO Status = gen_server:call(get(server),{connect,node()}),
-  Gardener = #gardener{id = GlobalName, type = Type, location = Location}, %TODO ask nir about starting garden
+init([MainServerGlobalName,{Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},GardenNumber,Type, Location]) ->
+  put(server,MainServerGlobalName),
+  put(1,{garden,Garden1Pid}),
+  put(2,{garden,Garden2Pid}),
+  put(3,{garden,Garden3Pid}),
+  put(4,{garden,Garden4Pid}),
+  Gardener = #gardener{id = self(), type = Type, location = Location, gardenNumber = GardenNumber},
   gen_server:cast(get(server),{newGardener,Gardener}),
   {ok, Gardener}.
 

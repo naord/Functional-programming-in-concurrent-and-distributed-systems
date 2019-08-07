@@ -13,29 +13,43 @@
 -include("globalVariables.hrl").
 %% API
 -behaviour(gen_server).
--record(state,{}).
+-record(state,{numOfGardens = 0}).
 
 start()->
-  GraphicServer1Pid = graphicServer:start(), % start graphic server
-  GraphicServer2Pid = graphicServer:start(),
-  %GraphicServer3Pid = graphicServer:start(), % TODO: add the servers
+  %GraphicServer1Pid = graphicServer:start(),
+  %GraphicServer2Pid = graphicServer:start(),
+  %GraphicServer3Pid = graphicServer:start(),
   %GraphicServer4Pid = graphicServer:start(),
   %io:fwrite("masterServer: init: GraphicServerPid = ~p ~p ~n",[GraphicServer1Pid,GraphicServer2Pid]), %TODO for test
-  gen_server:start({global, ?masterServerName}, ?MODULE, [GraphicServer1Pid,GraphicServer2Pid], []).
+  gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
-init([GraphicServer1Pid,GraphicServer2Pid])->
-  put({1,garden}, {global, ?garden1Name}),
-  put({2,garden}, {global, ?garden2Name}),
-  put({3,garden}, {global, ?garden3Name}),
-  put({4,garden}, {global, ?garden4Name}),
-
-  put({1,graphic}, GraphicServer1Pid),
-  put({2,graphic}, GraphicServer2Pid),
-  put({3,graphic}, GraphicServer1Pid), %TODO: change GraphicServer3Pid
-  put({4,graphic}, GraphicServer1Pid), %TODO: change GraphicServer4Pid
+init([])->
+%%  put({1,garden}, {global, ?garden1Name}),
+%%  put({2,garden}, {global, ?garden2Name}),
+%%  put({3,garden}, {global, ?garden3Name}),
+%%  put({4,garden}, {global, ?garden4Name}),
+%%
+%%  put({1,graphic}, GraphicServer1Pid),
+%%  put({2,graphic}, GraphicServer2Pid),
+%%  put({3,graphic}, GraphicServer1Pid), %TODO: change GraphicServer3Pid
+%%  put({4,graphic}, GraphicServer1Pid), %TODO: change GraphicServer4Pid
 
   databaseUtils:startDatabase(),
   {ok, #state{}}.
+
+handle_call({connectGarden,Number,Node,GraphicPid},From,State=#state{numOfGardens = NumOfGardens}) ->
+  {Pid,_} = From,
+  monitor_node(Node,true),%TODO check if work
+  %wx_object:cast(UIServerPid,{numOfServers,length(ServersList)+1}), TODO for gui
+  put({Number,garden},{Pid}), %TODO need node?
+  put({Number,graphic},{GraphicPid}), %TODO need node?
+  case NumOfGardens =:= 3 of
+    true ->
+      createGardeners();
+    false -> ok
+  end,
+  {reply,ok,State#state{numOfGardens = NumOfGardens + 1}}.
+
 
 handle_cast({newFlower, Flower}, NewState) ->
   databaseUtils:updateFlowerRecord(Flower),
@@ -47,7 +61,6 @@ handle_cast({newFlower, Flower}, NewState) ->
 
 handle_cast({newGardener, Gardener}, NewState) ->
   databaseUtils:updateGardenerRecord(Gardener),
-
   % Send to specific graphic server to sit down the gardener.
   wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}),{rest, Gardener}),
 
@@ -143,7 +156,16 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   end,
   {noreply, NewState}.
 
-
+createGardeners() ->
+  Garden1Pid = get({1,garden}),
+  Garden2Pid = get({2,garden}),
+  Garden3Pid = get({3,garden}),
+  Garden4Pid = get({4,garden}),
+  GlobalParams = {Garden1Pid,Garden2Pid,Garden3Pid,Garden4Pid},%GardenNumber,Type, Location
+  gen_server:cast(Garden1Pid, {createGardeners, GlobalParams}),
+  gen_server:cast(Garden2Pid, {createGardeners, GlobalParams}),
+  gen_server:cast(Garden3Pid, {createGardeners, GlobalParams}),
+  gen_server:cast(Garden4Pid, {createGardeners, GlobalParams}).
 
 recovery(GardenID)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
@@ -157,8 +179,6 @@ recovery(GardenID)->
   % Send the flowers sorted list by dangerous level to garden
   gen_server:cast(get({GardenID,garden}), {recovery, SortedFlowerList}).%TODO check get function
 
-handle_call(_,_,_) ->
-  ok.
 
 %%connectUIServerToGarden(GardenNumber)->
 %%  case GardenNumber of

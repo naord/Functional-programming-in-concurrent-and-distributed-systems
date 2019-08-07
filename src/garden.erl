@@ -14,7 +14,7 @@
 
 %% API
 -export([test/0, init/1, handle_cast/2, handle_call/3]).
--export([start_link/3,terminate/2,createFlowers/2]).
+-export([start_link/2,terminate/2,createFlowers/2]).
 -record(state, {number}).
 
 %TODO check if need more msg from/to flower and main server
@@ -22,9 +22,9 @@
 
 %%Creates a gen_server process as part of a supervision tree.
 %%start_link(ServerName, Module, Args, Options) -> Result
-start_link(GlobalName, Number, MainServerGlobalName) ->
+start_link(Number, MainServerGlobalName) ->
   io:fwrite("garden: start_link: Number = ~p ~n",[Number]),
-  gen_server:start_link({global,GlobalName}, ?MODULE, [MainServerGlobalName,Number], []).
+  gen_server:start_link({local,?MODULE}, ?MODULE, [MainServerGlobalName,Number], []).
 
 %%A set or ordered_set table can only have one object associated with each key
 %%When the process terminates, the table is automatically destroyed
@@ -32,12 +32,12 @@ start_link(GlobalName, Number, MainServerGlobalName) ->
 %% To destroy a table explicitly, use function delete/1.
 %%The table is a set table: one key, one object, no order among objects
 init([MainServerGlobalName,Number]) ->
-  %put(myNumber, Number),
-  io:fwrite("garden: init: Number = ~p ~n",[Number]),
-  put(server,{global,MainServerGlobalName}),
+  put(server,{masterServer,MainServerGlobalName}),
+  GraphicServerPid = graphicServer:start(),
+  gen_server:call({masterServer,MainServerGlobalName},{connectGarden,Number,node(),GraphicServerPid}),
+  %gardener:start_link(MainServerGlobalName,nir,{0,0}),
+  %gen_server:cast(get(server),{newGardener,Gardener}),
   ets:new(intToAtom(Number),[set,named_table,private]),
-  %TODO Status = gen_server:call(get(server),{connect,node()}),
- % io:fwrite("garden: init: Status = ~p ~n",[Status]), %TODO for test
   {ok, #state{number = Number}}.
 
 %From MainServer
@@ -100,6 +100,14 @@ handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState) ->
   io:fwrite("garden: changeGardenerLocation: Gardener = ~p ~n",[Gardener]),
 
   gen_server:cast(get(server),{changeGardenerLocation,{OldX, OldY, Gardener}}),
+  {noreply, NewState};
+
+handle_cast({createGardeners, GlobalParams}, NewState) ->
+  GardenNumber = NewState#state.number,
+  X = ((GardenNumber-1)*?screen_width)+?squareSize,
+  gardener:start_link(get(srver),GlobalParams,GardenNumber, nir, {X,0}),
+  gardener:start_link(get(srver),GlobalParams,GardenNumber, nir, {X+?squareSize,0}),
+  gardener:start_link(get(srver),GlobalParams,GardenNumber, nir, {X+2*?squareSize,0}),
   {noreply, NewState}.
 
 handle_call(Request,From,State)->
