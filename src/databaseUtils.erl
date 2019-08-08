@@ -89,18 +89,6 @@ getRestingGardener()->
      exit : _ -> io:format("getRestingGardener failed")
   end .
 
-
-%%getRestingGardener()->
-%%  Match = #gardener{state = resting, _ = '_'},
-%%  F = fun() -> mnesia:match_object(Match) end,
-%%  try
-%%    {_,Gardeners} = mnesia:transaction(F),
-%%    Gardeners
-%%  catch
-%%     error : _ -> io:format("getRestingGardener failed");
-%%     exit : _ -> io:format("getRestingGardener failed")
-%%  end.
-
 %-----------------------------------------
 % getAllKeysOf-
 
@@ -148,21 +136,6 @@ flowerListSortedByDangerousLevel()->
     end,
   lists:sort(ComperTo, AllFLowerInDangerList).
 
-%-----------------------------------------
-% getFlowerWithID -
-
-% Return the flower record correspond to
-% FlowerID.
-%-----------------------------------------
-%%getFlowerWithID(FlowerID) ->
-%%  F = fun () -> mnesia:read(flower, FlowerID) end,
-%%  try
-%%    {_, Ans} = mnesia:transaction(F),
-%%    Ans
-%%  catch
-%%    error :_  -> io:format("ERROR: CAN RETURN FLOWER WITH ID:" ++ FlowerID);
-%%    exit  :_  ->  io:format("EXIT: CAN RETURN FLOWER WITH ID:" ++ FlowerID)
-%%  end.
 
 %-----------------------------------------
 % getGardenerWithID -
@@ -180,7 +153,6 @@ getGardenerWithID(GardenerID) ->
     error :_  -> io:format("ERROR: CAN RETURN FLOWER WITH ID:" ++ GardenerID)
 end.
 
-%TODO : sortedGardenerDistanceFromFlower()
 %===========================================================================
 %                            UPDATE OR ADD STATUS
 %===========================================================================
@@ -229,20 +201,3 @@ getTolarableTime(Status)->
     pests_green  -> ?pestsTime;
     wilted       -> ?waterTime
   end.
-
-
-
-%%test()->
-%%  startDatabase(),
-%%  A = #flower{id = 1, type = a, status = pests_ant, timeSinceProblem = 50,  gardenerID = 1, gardenID = 2, x = 10, y = 10 },
-%%  updateFlowerRecord(A),
-%%  updateFlowerRecord(#flower{id = 4, type = a, status = pests_ant, timeSinceProblem = 60,  gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
-%%  updateFlowerRecord(#flower{id = 3, type = b, status = wilted, timeSinceProblem = 100, gardenerID = 1, gardenID = 2, x = 22, y = 10 }),
-%%  updateFlowerRecord(#flower{id = 2, type = a, status = wilted, timeSinceProblem = 190, gardenerID = 1, gardenID = 2, x = 10, y = 10 }),
-%%  L = getFlowerWithID(4),
-%%
-%%
-%%
-%%  flowerListSortedByDangerousLevel(1), ok.
-
-

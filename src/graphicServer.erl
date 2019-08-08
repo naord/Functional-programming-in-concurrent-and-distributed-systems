@@ -39,12 +39,11 @@ start() ->
 init([WxObject]) ->
   initializeGraphicWindow(WxObject).
 
-handle_call(Request, From, NewState) ->
+handle_call(_, _, NewState) ->
   {reply, ok, NewState}.
 
 
 handle_cast({update, Flower}, NewState) ->
-  %io:fwrite("graphicServer: update: Flower = ~p ~n",[Flower]), %TODO for test
   Type = Flower#flower.type,
   Status = Flower#flower.status,
   X = Flower#flower.x,
@@ -53,23 +52,21 @@ handle_cast({update, Flower}, NewState) ->
   {noreply, NewState};
 
 handle_cast({deleteGardenerFromGarden, {OldX, OldY}}, NewState) ->
-  %io:fwrite("graphicServer: addGardener:  {X, Y}={~p,~p} ~n",[OldX, OldY]), %TODO for test
   MyState        = get(my_state),
   WxDC           = MyState#graphic_server.gardenPainter,
-  PrevObjectInXY = maps:get({OldX, OldY}, MyState#graphic_server.objectsMatrix),
-  wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {OldX, OldY}),
+  NewOldX = OldX rem 1360,
+  PrevObjectInXY = maps:get({NewOldX, OldY}, MyState#graphic_server.objectsMatrix),
+  wxDC:drawBitmap(WxDC, maps:get(PrevObjectInXY, MyState#graphic_server.allImages), {NewOldX, OldY}),
   {noreply, NewState};
 
 
 handle_cast({makeSteps, {OldX, OldY, Gardener}}, NewState) ->
-  %io:fwrite("graphicServer: makeSteps: Gardener = ~p ~n",[Gardener]), %TODO for test
   GardenNumber = Gardener#gardener.gardenNumber,
   {X,Y} = Gardener#gardener.location,
   makeSteps(Gardener#gardener.type,normalizeX(OldX,GardenNumber), OldY, {normalizeX(X,GardenNumber),Y}),
   {noreply, NewState};
 
 handle_cast({newFlower,Flower}, NewState) ->
-  %io:fwrite("graphicServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
   Type = Flower#flower.type,
   X = Flower#flower.x,
   Y = Flower#flower.y,
@@ -83,7 +80,6 @@ handle_cast({rest, Gardener}, NewState) ->
   {noreply, NewState};
 
 handle_cast({addGardener, Gardener}, NewState) ->
-  %io:fwrite("graphicServer: addGardener: Gardener ~p ~n",[ Gardener]), %TODO for test
   MyState      = get(my_state),
   WxDC         = MyState#graphic_server.gardenPainter,
   GardenerType = Gardener#gardener.type,
@@ -98,20 +94,17 @@ handle_cast({addGardener, Gardener}, NewState) ->
   end,
   {noreply, NewState}.
 
-handle_event(Wx, NewState) ->
+handle_event(_, NewState) ->
   {noreply, NewState}.
 
-handle_info(Msg, NewState) ->
-  %io:format("~p~n", [Msg]),
+handle_info(_, NewState) ->
   {noreply, NewState}.
 
 
-terminate(Reason, NewState) -> ok.
+terminate(_, _) -> ok.
 
 
-start_link()-> ok.
-
-
+%start_link()-> ok.
 
 initializeGraphicWindow(Wx)->
 
@@ -211,44 +204,6 @@ initializeGraphicWindow(Wx)->
 
   {GardenFrame, GraphicServer}.
 
-%%
-%%A=updateObjectStatusInObjectsMatrix(480, 480, red_r_pests_green, MatrixObjectsPosition),
-%%B=updateObjectStatusInObjectsMatrix(800, 320, iris_r_normal, A),
-%%C=updateObjectStatusInObjectsMatrix(640, 560, red_l_wilted, B),
-%%D=updateObjectStatusInObjectsMatrix(560, 160, iris_r_wilted, C),
-%%E=updateObjectStatusInObjectsMatrix(320, 320, red_r_normal, D),
-%%F=updateObjectStatusInObjectsMatrix(720, 480, iris_l_pests_green, E),
-%%
-%%wxDC:drawBitmap(GardenPainter, maps:get(red_r_pests_green, AllImages), {480, 480}),
-%%wxDC:drawBitmap(GardenPainter, maps:get(iris_r_normal, AllImages), {800, 320}),
-%%wxDC:drawBitmap(GardenPainter, maps:get(red_l_wilted, AllImages), {640, 560}),
-%%wxDC:drawBitmap(GardenPainter, maps:get(iris_r_wilted, AllImages), {560, 160}),
-%%wxDC:drawBitmap(GardenPainter, maps:get(red_r_normal, AllImages), {320, 320}),
-%%wxDC:drawBitmap(GardenPainter, maps:get(iris_l_pests_green, AllImages), {720, 480}),
-
-%%makeSteps(nir,240, 320, {160, 240}),
-%%makeSteps(nir,320, 400, {240, 320}),
-%%makeSteps(nir,400, 480, {320, 400}),
-%%makeSteps(nir,480, 480, {400, 480}),
-%%makeSteps(nir,560, 480, {480, 480}),
-%%makeSteps(nir,640, 560, {560, 480}),
-%%makeSteps(nir,720, 480, {640, 560}),
-%%makeSteps(nir,800, 400, {720, 480}),
-%%makeSteps(nir,800, 320, {800, 400}),
-%%makeSteps(nir,800, 240, {800, 320}),
-%%makeSteps(nir,800, 160, {800, 240}),
-%%makeSteps(nir,720, 160, {800, 160}),
-%%makeSteps(nir,640, 160, {720, 160}),
-%%makeSteps(nir,560, 160, {640, 160}),
-%%makeSteps(nir,480, 160, {560, 160}),
-%%makeSteps(nir,400, 240, {480, 160}),
-%%makeSteps(nir,320, 320, {400, 240}),
-%%makeSteps(nir,240, 400, {320, 320}),
-%%makeSteps(nir,240, 480, {240, 400}),
-%%makeSteps(nir,240, 560, {240, 480})
-
-
-
 drawing_timer(PID)->
   receive
     stop->0
@@ -264,14 +219,11 @@ updateFlowerStatus(Type, NewStatus, {X, Y}) ->
     NewStatus =:= normal -> NewFlowerToDraw = Type;
     true -> NewFlowerToDraw = list_to_atom(atom_to_list(Type) ++ "_" ++ atom_to_list(NewStatus))
   end,
-  %io:fwrite("graphicServer: updateFlowerStatus: NewFlowerToDraw = ~p ~n",[NewFlowerToDraw]), %TODO for test
-
   MyState = get(my_state),
   NewMap = updateObjectStatusInObjectsMatrix(X, Y, NewFlowerToDraw, (MyState#graphic_server.objectsMatrix)),
   wxDC:drawBitmap(MyState#graphic_server.gardenPainter, maps:get(NewFlowerToDraw, MyState#graphic_server.allImages), {X, Y}),
   erase(my_state),
   put(my_state, MyState#graphic_server{objectsMatrix = NewMap}).
-
 
 drawNewFLower(Type , X, Y)->
   MyState   = get(my_state),
@@ -289,8 +241,6 @@ drawNewFLower(Type , X, Y)->
 
 
 makeSteps(Type, OldX, OldY, {NewX, NewY})->
-  %io:fwrite("graphicServer: makeSteps:  ~p ~p ~n",[OldX, NewX]), %TODO for test
-
   MyState        = get(my_state),
   WxDC           = MyState#graphic_server.gardenPainter,
   AllImages      = MyState#graphic_server.allImages,
@@ -332,37 +282,6 @@ sitDownTheGardener(Type, X, Y)->
 %                      Get Random Objects Functions
 %===================================================================
 
-getRandomBug()->
-  RandomBugLeft = getRandomNumber(20),
-  if
-    RandomBugLeft < 10 -> "ant";
-    RandomBugLeft < 20 -> "green";
-    true -> "purple"
-  end.
-
-
-getRandomFlower()->
-  RandomFlower = getRandomNumber(40),
-  if
-    RandomFlower < 10 -> iris_l;
-    RandomFlower < 20 -> iris_r;
-    RandomFlower < 30 -> red_l;
-    true -> red_r
-  end.
-
-getRandomGardener()->
-  RandomGardener = getRandomNumber(20),
-  if
-    RandomGardener < 10 -> nir_right;
-    true -> naor_right
-  end.
-
-getRandomNumber(Gap)->
-  {T1,T2,T3} = now(),
-  random:seed(T1, T2, T3),
-  random:uniform(Gap).
-
-
 initObjectMatrixAsMap(_, [], Map) ->
   Map;
 
@@ -376,52 +295,6 @@ fillAvailableCoordinateList()->
 updateObjectStatusInObjectsMatrix(X, Y, NewObject, Map)->
   maps:update({X, Y}, NewObject, Map).
 
-
-drawFromRecovery(FlowerInGarden, GardenerInGarden) ->
-  MyState = get(my_state),
-  erase(my_state),
-  WxDC    = MyState#graphic_server.gardenPainter,
-
-  % Insert number of flower
-  NewNumberOfFLowers = lists:flatlength(FlowerInGarden),
-  put(my_state, MyState#graphic_server{numberOfFlower = NewNumberOfFLowers}),
-
-  % For each coordinate pair we draw the flower should be in this square.
-  Fun = fun(Flower) ->
-    updateFlowerStatus(Flower#flower.type, Flower#flower.status, {Flower#flower.x, Flower#flower.y}) end,
-  maps:foreach(Fun, FlowerInGarden),
-
-  % For each coordinate pair we draw the gardener should be in this square.
-  Fun = fun(Gardener) ->
-    {X, Y} = Gardener#gardener.location,
-    makeSteps(Gardener#gardener.type, X, Y, {X, Y}) end,
-  maps:foreach(Fun, GardenerInGarden).
+normalizeX(X, _)-> X rem (?screen_width + ?squareSize).
 
 
-
-checkCoordinate(X, Y) ->
-  if
-    (((X >= 0) and (X =< 1280)) and ((Y >= 0) and (Y =< 880)))
-      and ((X rem 80 =:= 0) and (Y rem 80 =:= 0))-> ok;
-    true -> error
-  end.
-
-normalizeX(X, GardenNumber)-> X rem (?screen_width + ?squareSize).
-
-
-%%fillMatrix(Insert, {X, Y}, Map)->
-%%  if
-%%    X < 1281 ->
-%%      NewMergeMap = maps:merge(Map, #{{X, Y} => Insert}),
-%%      NewMergeMapWithCal = fillCol(Insert, {X, Y + 80}, NewMergeMap),
-%%      fillMatrix(Insert, {X + 80, Y}, NewMergeMapWithCal);
-%%    true -> Map
-%%  end.
-%%
-%%fillCol(Insert, {X, Y}, Map) ->
-%%  if
-%%    Y < 881 ->
-%%      NewMergeMap = maps:merge(Map, #{{X, Y} => Insert}),
-%%      fillCol(Insert, {X, Y + 80}, NewMergeMap);
-%%    true -> Map
-%%  end.

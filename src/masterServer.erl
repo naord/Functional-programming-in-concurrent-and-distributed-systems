@@ -15,61 +15,64 @@
 -behaviour(gen_server).
 -record(state,{numOfGardens = 0 , gardensPids = []}).
 
+%Start the master server(call the init function).
 start()->
-  %io:fwrite("masterServer: init: GraphicServerPid = ~p ~p ~n",[GraphicServer1Pid,GraphicServer2Pid]), %TODO for test
   gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
 init([])->
   databaseUtils:startDatabase(),
   {ok, #state{}}.
 
+%%connect garden and its graphic server to master server.
+%% send from garden.
+%% if all gardens connected start creating the gardeners.
 handle_call({connectGarden,Number,Node,GraphicPid},From,State=#state{numOfGardens = NumOfGardens, gardensPids = GardenPids}) ->
   {Pid,_} = From,
-  monitor_node(Node,true),%TODO check if work
-  %wx_object:cast(UIServerPid,{numOfServers,length(ServersList)+1}), TODO for gui
-  put({Number,garden},Pid), %TODO need node?
-  put({Number,graphic}, GraphicPid), %TODO need node?
+  monitor_node(Node,true),
+  put({Number,garden},Pid),
+  put({Number,graphic}, GraphicPid),
   NewState = State#state{numOfGardens = NumOfGardens + 1, gardensPids = GardenPids ++ [Pid]},
-  io:fwrite("masterServer: connectGarden: NewState = ~p ~n",[NewState]), %TODO for test
-  case NewState#state.numOfGardens =:= ?numOfGardens of
+  case NewState#state.numOfGardens =:= ?numOfGardens of %if all gardens connected start creating the gardeners.
     true ->
       createGardeners(NewState);
     false -> ok
   end,
   {reply,ok,NewState}.
 
-
+%handle new flower request
+%update the data base with the flower record.
 handle_cast({newFlower, Flower}, NewState) ->
   databaseUtils:updateFlowerRecord(Flower),
-  %io:fwrite("masterServer: newFlower: Flower = ~p ~n",[Flower]), %TODO for test
   % Send to specific graphic server to sit down the gardener.
   wx_object:cast(get({Flower#flower.gardenID,graphic}),{newFlower,Flower}),
-
   {noreply, NewState};
 
+%%handle new gardener request.
+%%update data base with the gardener record.
+%%send cast to the gardeners graphic server and garden.
 handle_cast({newGardener, Gardener}, NewState) ->
-  %io:fwrite("masterServer: newGardener: Gardener = ~p ~n",[Gardener]), %TODO for test
   databaseUtils:updateGardenerRecord(Gardener),
   % Send to specific graphic server to sit down the gardener.
   wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}),{rest, Gardener}),
   gen_server:cast(get({Gardener#gardener.gardenNumber,garden}),{newGardener, Gardener}),
   {noreply, NewState};
 
-handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all status changes?
+%%handle flower change status update.
+%% update data base with the new record.
+%%send cast to the flowers graphic server.
+%% check if the status is normal if so look for free gardener and send him to needed flower.
+handle_cast({changeFlowerStatus,Flower}, NewState) ->
   % Draw the updated status flower in graphicServer of this garden
   wx_object:cast(get({Flower#flower.gardenID,graphic}),{update, Flower}),
-  %io:fwrite("masterServer: changeFlowerStatus++ ~n"), %TODO for test
   databaseUtils:updateFlowerRecord(Flower),
   FlowerStatus = Flower#flower.status,
   if
     FlowerStatus =/= normal ->
       Gardeners = databaseUtils:getRestingGardener(),
       Length =  lists:flatlength(Gardeners),
-      %io:fwrite("masterServer: changeFlowerStatus: Gardeners= ~p ~n",[Gardeners]), %TODO for test
       if
         Length > 0 ->
           [Gardener | _] = Gardeners,
-          %io:fwrite("masterServer: changeFlowerStatus: cast= ~p ~n",[get({Flower#flower.gardenID,garden})]), %TODO for test
           gen_server:cast(get({Flower#flower.gardenID,garden}), {sendGardenerToFlower, Gardener, Flower});
         true ->
           ok
@@ -79,11 +82,13 @@ handle_cast({changeFlowerStatus,Flower}, NewState) -> %TODO one msg to all statu
   end,
   {noreply, NewState};
 
+%%update data base record for changes that are not status change.
 handle_cast({updateFlower, Flower}, NewState) ->
   % Update the database.
   databaseUtils:updateFlowerRecord(Flower),
   {noreply, NewState};
 
+%%delete flower from record and send delete request to his graphic server.
 handle_cast({deleteFlower, Flower}, NewState) ->
   % Delete the flower from the map in specific graphicServer.
   wx_object:cast(get({Flower#flower.gardenID,graphic}), {update, Flower}),
@@ -92,25 +97,26 @@ handle_cast({deleteFlower, Flower}, NewState) ->
   databaseUtils:deleteFlower(Flower#flower.id),
   {noreply, NewState};
 
+%update gardener record to gardenerWalkToFlower
 handle_cast({gardenerWalkToFlower, Gardener}, NewState)->
-  %io:fwrite("masterServer: gardenerWalkToFlower: Gardener = ~p ~n",[Gardener]), %TODO for test
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
   {noreply, NewState};
 
-
+%update data base with gardener new location
+%send change location request to his graphic server.
 handle_cast({changeGardenerLocation, {OldX, OldY, Gardener}}, NewState)->
   % Send to specific graphic server to move the gardener.
-  %io:fwrite("masterServer: changeGardenerLocation =~p ~p ~p ~p ~n",[get({Gardener#gardener.gardenNumber,graphic}),OldX,OldY, Gardener]), %TODO for test
   wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}), {makeSteps, {OldX, OldY, Gardener}}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
   {noreply, NewState};
 
+%update data base with gardener new garden
+%send delete gardener request to old graphic server and create gardener to new graphic server.
 handle_cast({changeGardenerGarden, {OldGarden, OldX, OldY, Gardener}}, NewState)->
   % Send to specific graphic server to move the gardener.
-  %io:fwrite("masterServer: changeGardenerGarden =~p ~p ~p ~p ~n",[get({Gardener#gardener.gardenNumber,graphic}),OldX,OldY, Gardener]), %TODO for test
   wx_object:cast(get({OldGarden, graphic}), {deleteGardenerFromGarden, {OldX, OldY}}),
 
   % Draw garden in new garden
@@ -122,16 +128,16 @@ handle_cast({changeGardenerGarden, {OldGarden, OldX, OldY, Gardener}}, NewState)
       NewX = ?screen_width
   end,
   G = Gardener#gardener{location = {NewX, Y}},
-  %io:fwrite("masterServer: changeGardenerGarden =~p ~p ~p ~p ~n",[NewX,OldX,OldY, G]), %TODO for test
   wx_object:cast(get({Gardener#gardener.gardenNumber, graphic}), {addGardener, G}),
 
   % Update the database.
   databaseUtils:updateGardenerRecord(Gardener),
   {noreply, NewState};
 
+%update data base and graphic server with gardener new record.
+%check if there are flower who need handeling if so send the to the garden the gardener.
 handle_cast({gardenerResting, Gardener}, NewState) ->
   % Send to specific graphic server to sit down the gardener.
-  %io:fwrite("masterServer: gardenerResting =~p ~n",[Gardener]), %TODO for test
   wx_object:cast(get({Gardener#gardener.gardenNumber,graphic}), {rest, Gardener}),
 
   % Update the database.
@@ -147,9 +153,8 @@ handle_cast({gardenerResting, Gardener}, NewState) ->
   end,
   {noreply, NewState}.
 
+%create 4 gardeners to each garden
 createGardeners(NewState)  ->
-  %GardenNumber = NewState#state.numOfGardens,
-  %X = ((GardenNumber - 1) * ?screen_width) + ?squareSize,
   GardensPid = NewState#state.gardensPids,
 
   gardener:start_link(self(), GardensPid, 1, nir, {0,0},1),
@@ -167,62 +172,14 @@ createGardeners(NewState)  ->
   gardener:start_link(self(), GardensPid, 3, nir, {3*?squareSize + ?screen_width*2,0},11),
   gardener:start_link(self(), GardensPid, 3, nir, {4*?squareSize + ?screen_width*2,0},12).
 
-%%
-%%  gardener:start_link(self(), GardensPid, 4, nir, {0,0}),
-%%  gardener:start_link(self(), GardensPid, 4, nir, {?squareSize,0}),
-%%  gardener:start_link(self(), GardensPid, 4, nir, {2*?squareSize,0}),
-%%  gardener:start_link(self(), GardensPid, 4, nir, {3*?squareSize,0}).
-
-
-
-%%createGardeners(GardenNum,GardenerNumber,GardensPid,GardenersToStop) when ((GardenerNumber =< GardenersToStop) and (GardenNum =< ?numOfGardens)) ->
-%%  io:fwrite("masterServer: createGardeners =~p ~p ~p ~p ~n",[GardenNum,GardenerNumber,GardensPid,GardenersToStop]), %TODO for test
-%%  gardener:start_link(self(), GardensPid, GardenNum, nir, {?squareSize * GardenerNumber,0}),
-%%  createGardeners(GardenNum,GardenerNumber + 1,GardensPid,GardenersToStop);
-%%
-%%createGardeners(GardenNum,GardenerNumber,GardensPid,GardenersToStop) when GardenNum =< ?numOfGardens ->
-%%  io:fwrite("masterServer: createGardeners2 =~p ~p ~p ~p ~n",[GardenNum,GardenerNumber,GardensPid,GardenersToStop]), %TODO for test
-%%  createGardeners(GardenNum + 1, 1,GardensPid,GardenersToStop);
-%%
-%%createGardeners(GardenNum,GardenerNumber,_,GardenersToStop) ->
-%%  io:fwrite("masterServer: createGardeners3 done ~p ~p ~p ~p ~p ~n",[((GardenerNumber =< GardenersToStop) and (GardenNum =< ?numOfGardens)),GardenerNumber,GardenersToStop,GardenNum,?numOfGardens]), %TODO for test
-%%  ok.
-
 recovery(GardenID)->
   FlowerInGardenID   = databaseUtils:listsRecordOfFlowerInGarden(GardenID),
   GardenerInGardenID = databaseUtils:listsRecordOfGardenerInGarden(GardenID),
   SortedFlowerList   = databaseUtils:flowerListSortedByDangerousLevel(),
 
   % Send obejcts to graphic server to recover
-  %TODO: NEED TO INIT THE GRAPHIC SERVER HERE AND HANDLE RECOVERY. SHOULD BE HANDLE_CALL TO GRAPHICSERVER?
-  wx_object:cast(get({GardenID,garden}), {recovery, {FlowerInGardenID, GardenerInGardenID}}),%TODO check get function
+  wx_object:cast(get({GardenID,garden}), {recovery, {FlowerInGardenID, GardenerInGardenID}}),
 
   % Send the flowers sorted list by dangerous level to garden
-  gen_server:cast(get({GardenID,garden}), {recovery, SortedFlowerList}).%TODO check get function
-
-
-%%connectUIServerToGarden(GardenNumber)->
-%%  case GardenNumber of
-%%    1 -> get(?graphic1Name);
-%%    2 -> get(graphic2Pid);
-%%    3 -> get(graphic3Pid);
-%%    4 -> get(graphic4Pid)
-%%  end.
-
-%%connectUIServerToGarden(GardenID)->
-%%  case GardenID of
-%%    garden1 -> get(graphic1);%graphic1; %TODO
-%%    garden2 -> get(graphic1);%graphic2;
-%%    garden3 -> get(graphic1);%graphic3;
-%%    garden4 -> get(graphic1)%graphic4
-%%end.
-
-%%getGardenName(Number) ->
-%%  case Number of
-%%    1 -> {global,?garden1Name};
-%%    2 -> {global,?garden2Name};
-%%    3 -> {global,?garden3Name};
-%%    _ -> {global,?garden4Name}
-%%  end.
-
+  gen_server:cast(get({GardenID,garden}), {recovery, SortedFlowerList}).
 
